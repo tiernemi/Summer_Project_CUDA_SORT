@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
 	std::vector<Camera> cameras ;
 	FileLoader::loadFile(triangles,cameras,filename.getValue()) ;
 
+
 	return EXIT_SUCCESS ;
 }
 
