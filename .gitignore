@@ -1,4 +1,5 @@
-unit_tests/
+unit_tests/*.o
+unit_tests/t/wvtest
 *.o
 *.swp
 bin/

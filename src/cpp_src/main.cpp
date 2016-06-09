@@ -54,8 +54,6 @@ int main(int argc, char *argv[]) {
 	// Convert to sortable form //
 	std::vector<std::pair<int,float>> distances ;
 	Transforms::transformToDistVec(distances, triangles, cameras[0]) ;
-	std::unordered_map<int,float> distancesMap ;
-	Transforms::transformToDistMap(distancesMap, triangles, cameras[0]) ;
 
 	return EXIT_SUCCESS ;
 }

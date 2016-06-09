@@ -37,6 +37,7 @@ TARGET= sort
 
 all: $(BIN) $(OBJECTS) 
 	$(NVCC) $(OBJECTS) -o $(TARGET) -I$(INCPATH) -lcudadevrt
+	chmod 777 $(OBJECTS)
 
 .SECONDEXPANSION:
 $(CXXOBJECTS): %.o: $$(addprefix $(CXXSRCDIR), $$(notdir %)).cpp $(HEADERS)
@@ -53,7 +54,9 @@ $(BIN):
 clean:
 	rm -rf $(BIN) $(TARGET)
 
-unit_tests: $(TARGET).o
-	make -C unit_tests test
+test: all
+	./sort -f data/testData.txt
 
+unit_tests: all
+	make -C unit_tests test
 
