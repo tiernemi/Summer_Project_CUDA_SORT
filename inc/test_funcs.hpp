@@ -21,16 +21,51 @@
 #include <vector>
 #include <unordered_map>
 
-template <typename DataType>
-bool checkSorted(std::vector<DataType> & list) ;
+namespace Tests {
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  checkSorted
+ *    Arguments:  std::vector<Datatype> & list - List of potentially sorted data.
+ *      Returns:  True if sorted (ascending), false otherwise.
+ *  Description:  Checks if the list is sorted in ascendign order.
+ * =====================================================================================
+ */
 
 template <typename DataType>
-bool checkSorted(std::unordered_map<int,DataType> & list) ;
+bool checkSorted(std::vector<std::pair<int,DataType>> & list) {
+	DataType prev = (*list.begin()).second ;
+	for (auto i = list.begin()+1 ; i != list.end() ; ++i) {
+		if (prev > (*i).second) {
+			return false ;
+		}
+		prev = (*i).second ;
+	}
+	return true ;
+}
 
-void startClock() ;
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  checkSorted
+ *    Arguments:  std::map<Datatype> & list - List of potentially sorted data.
+ *      Returns:  True if sorted (ascending), false otherwise.
+ *  Description:  Checks if the list is sorted in ascendign order.
+ * =====================================================================================
+ */
 
-void stopClock() ;
+template <typename DataType>
+bool checkSorted(std::unordered_map<int,DataType> & list) {
+	DataType prev = (*list.begin()).second ;
+	for (auto i = list.begin()+1 ; i != list.end() ; ++i) {
+		if (prev > (*i).second) {
+			return false ;
+		}
+		prev = (*i).second ;
+	}
+	return true ;
+}
 
-float getDuration() ;
+
+}
 
 #endif /* end of include guard: TEST_FUNCS_HPP_RE69JCLG */

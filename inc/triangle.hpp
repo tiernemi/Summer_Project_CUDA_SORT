@@ -19,7 +19,6 @@
  */
 
 #include <vector>
-#include "camera.hpp"
 
 /* 
  * ===  CLASS  =========================================================================
@@ -36,7 +35,6 @@ class Triangle {
 	Triangle(const float & x, const float & y, const float & z, int id) ;
 	Triangle(const Triangle & obj) ;
 	virtual ~Triangle() ;
-	void translate(const Camera & camera) ;
 	const float * getCoords() const {return coords ;} ;
 	unsigned int getID() const {return id ;} ;
 	void setCoords(const float & x, const float & y, const float & z) ;

@@ -23,18 +23,24 @@
 #include "../../inc/test_funcs.hpp"
 #include "../../inc/fileloader.hpp"
 #include "../../inc/cmd_parser.hpp"
-#include "../../inc/cmd_line_argument.hpp"
-#include "../../inc/flag.hpp"
+#include "../../inc/c_variable.hpp"
+#include "../../inc/c_flag.hpp"
+#include "../../inc/transforms.hpp"
+#include "../../inc/camera.hpp"
+#include "../../inc/cpu_sorts.hpp"
+#include "../../inc/test_funcs.hpp"
+
+// Options //
+CFlag verbose("verbose",false,"v") ;
+CFlag help("help",false,"h") ;
+CVariable<std::string> filename("filename","","f:") ;
 
 int main(int argc, char *argv[]) {
 
 	// Command Line Options //
 	std::vector<CommandLineOption*> options ;
-	Flag verbose("verbose",false,"v") ;
 	options.push_back(&verbose) ;
-	Flag help("help",false,"h") ;
 	options.push_back(&help) ;
-	CommandLineArgument<std::string> filename("filename","","f:") ;
 	options.push_back(&filename) ;
 
 	// Process Command Line Options //
@@ -45,6 +51,11 @@ int main(int argc, char *argv[]) {
 	std::vector<Camera> cameras ;
 	FileLoader::loadFile(triangles,cameras,filename.getValue()) ;
 
+	// Convert to sortable form //
+	std::vector<std::pair<int,float>> distances ;
+	Transforms::transformToDistVec(distances, triangles, cameras[0]) ;
+	std::unordered_map<int,float> distancesMap ;
+	Transforms::transformToDistMap(distancesMap, triangles, cameras[0]) ;
 
 	return EXIT_SUCCESS ;
 }

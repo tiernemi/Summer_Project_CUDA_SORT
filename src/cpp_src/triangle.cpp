@@ -52,21 +52,6 @@ Triangle::Triangle(const Triangle & obj) {
 }		/* -----  end of member function Triangle  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : triangle  ======================================
- *         Name:  translate
- *    Arguments:  const std::vector<float> & camera - Camera co-ordinates.
- *  Description:  Translates the triangle to the camera space.
- * =====================================================================================
- */
-
-void Triangle::translate(const Camera & camera) {
-	const float * cameraco = camera.getCoords() ;
-	coords[0] = coords[0] - cameraco[0] ;
-	coords[1] = coords[1] - cameraco[1] ;
-	coords[2] = coords[2] - cameraco[2] ;
-}
-
-/* 
  * ===  MEMBER FUNCTION CLASS : Triangle  ======================================
  *         Name:  setCoords
  *    Arguments:  const float & x - x-co-ord ;

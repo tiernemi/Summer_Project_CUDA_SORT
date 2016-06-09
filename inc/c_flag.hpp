@@ -22,21 +22,22 @@
 
 /* 
  * ===  CLASS  =========================================================================
- *         Name:  Flag
- *       Fields:  
- *  Description:  
+ *         Name:  CFlag
+ *       Fields:  bool state - The state (true or false) of flag.
+ *  Description:  CFlag object is used to represent command line arguments of the form
+ *                -x where this just switchs on a boolean to true.
  * =====================================================================================
  */
 
-class Flag : public CommandLineOption {
+class CFlag : public CommandLineOption {
  public:
-	Flag(const std::string & name, const bool defaultVal, const std::string & symbol) ;
-	virtual ~Flag() ;
+	CFlag(const std::string & name, const bool defaultVal, const std::string & symbol) ;
+	virtual ~CFlag() ;
 	virtual void processOption(const std::string & arg) ;
 	bool getState() const {return state ;} ;
 	void setState(const bool & val) { state = val ; } ;
  private:
 	bool state ;
-} ;		/* -----  end of class Flag  ----- */
+} ;		/* -----  end of class CFlag  ----- */
 
 #endif /* end of include guard: FLAG_HPP_RCPIXP4A */

@@ -15,19 +15,22 @@
  * =====================================================================================
  */
 
-#include "../../inc/cmd_parser.hpp"
 #include <string>
 #include <iostream>
 #include "stdlib.h"
-#include "../../inc/cmd_line_option.hpp"
 #include "getopt.h"
+
+// Custom Headers //
+#include "../../inc/cmd_parser.hpp"
+#include "../../inc/cmd_line_option.hpp"
 
 /* 
  * ===  MEMBER FUNCTION CLASS : CommandParser  ======================================
  *         Name:  processArgs
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ *    Arguments:  int argc - Number of cmd line arguments.
+ *                char * argv[] - Array containg arguments.
+ *                std::vector<CommandLineOption*> Array containing program options.
+ *  Description:  Parses command line options based on the passed options array.
  * =====================================================================================
  */
 

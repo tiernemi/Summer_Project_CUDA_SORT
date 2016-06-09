@@ -23,8 +23,10 @@
 /* 
  * ===  CLASS  =========================================================================
  *         Name:  CommandLineOption
- *       Fields:  
- *  Description:  
+ *       Fields:  const std::string name - Name of the option.
+ *                const std::string symbol - Symbol used to represent option in cmd line.
+ *  Description:  Command line option is an abstract base class inherited by flags and
+ *                command line variables. 
  * =====================================================================================
  */
 

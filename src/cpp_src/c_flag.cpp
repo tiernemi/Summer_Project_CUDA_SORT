@@ -1,9 +1,9 @@
 /*
  * =====================================================================================
  *
- *       Filename:  flag.cpp
+ *       Filename:  c_flag.cpp
  *
- *    Description:  Source file for flag objects/
+ *    Description:  Source file for c_flag objects/
  *
  *        Version:  1.0
  *        Created:  08/06/16 15:28:19
@@ -15,43 +15,43 @@
  * =====================================================================================
  */
 
-#include "../../inc/flag.hpp"
+#include "../../inc/c_flag.hpp"
 
 /* 
- * ===  MEMBER FUNCTION CLASS : Flag  ===================================================
- *         Name:  Flag
+ * ===  MEMBER FUNCTION CLASS : CFlag  ===================================================
+ *         Name:  CFlag
  *    Arguments:  const std::string & name - Name of argument.
  *                const Datatype & defaultVal - Default value of argument.
  *                const std::string & symbol - Symbol associated with argument.
- *  Description:  Initialises flag object.
+ *  Description:  Initialises c_flag object.
  * ======================================================================================
  */
 
-Flag::Flag(const std::string & name, const bool defaultVal, const std::string & symbol) 
+CFlag::CFlag(const std::string & name, const bool defaultVal, const std::string & symbol) 
 	: CommandLineOption(name,symbol) {
 	state = defaultVal ;
-}		/* -----  end of member function Flag  ----- */
+}		/* -----  end of member function CFlag  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : Flag  ==================================================
+ * ===  MEMBER FUNCTION CLASS : CFlag  ==================================================
  *         Name:  processArgument
  *    Arguments:  const std::string & arg - Argument passed from command line.
- *  Description:  Set flag to true if detected in command line.
+ *  Description:  Set c_flag to true if detected in command line.
  * =====================================================================================
  */
 
-void Flag::processOption(const std::string & arg) {
+void CFlag::processOption(const std::string & arg) {
 	state = true ;
 }		/* -----  end of member function processArgument  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : Flag  =================================================
- *         Name: ~Flag
- *  Description: Destructor for flag.
+ * ===  MEMBER FUNCTION CLASS : CFlag  =================================================
+ *         Name: ~CFlag
+ *  Description: Destructor for c_flag.
  * =====================================================================================
  */
 
-Flag::~Flag() {
+CFlag::~CFlag() {
 	;
 }		/* -----  end of member function   ----- */
 

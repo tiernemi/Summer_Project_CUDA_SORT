@@ -18,9 +18,12 @@
  * =====================================================================================
  */
 
-#include "triangle.hpp"
 #include <string>
 #include <fstream>
+
+// Custom Headers //
+#include "triangle.hpp"
+#include "camera.hpp"
 
 /* 
  * ===  CLASS  =========================================================================

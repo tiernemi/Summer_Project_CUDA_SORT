@@ -15,6 +15,7 @@
  * =====================================================================================
  */
 
+// Custom Headers //
 #include "../../inc/cmd_line_option.hpp"
 
 /* 
@@ -31,10 +32,8 @@ CommandLineOption::CommandLineOption(const std::string & name, const std::string
 
 /* 
  * ===  MEMBER FUNCTION CLASS : cmd_line_option  ======================================
- *         Name:  function
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ *         Name:  ~CommandLineOption
+ *  Description:  Destructor of command line option.
  * =====================================================================================
  */
 

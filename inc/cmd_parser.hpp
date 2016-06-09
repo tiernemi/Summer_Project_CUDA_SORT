@@ -19,12 +19,14 @@
  */
 
 #include <vector>
+
+// Custom Headers //
 #include "cmd_line_option.hpp"
+
 /* 
  * ===  CLASS  =========================================================================
  *         Name:  CommandParser
- *       Fields:  
- *  Description:  
+ *  Description:  Helper class for parsing command line arguments.
  * =====================================================================================
  */
 
