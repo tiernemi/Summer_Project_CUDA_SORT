@@ -23,8 +23,8 @@
 #include <tuple>
 
 namespace CPUSorts {
-	void sortVecSTD(std::vector<std::pair<int,float>> & distances) ;
-	void sortMapSTD(std::unordered_map<int,float> & distances) ;
+	void cpuSTLSort(std::vector<std::pair<int,float>> & distances) ;
+	void cpuBitonicSort(std::vector<std::pair<int,float>> & distances) ;
 }
 
 #endif /* end of include guard: CPU_SORTS_HPP_ZSROWPJV */

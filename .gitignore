@@ -2,6 +2,7 @@ unit_tests/*.o
 unit_tests/t/wvtest
 benchmarks/*.o
 benchmarks/b/bench
+benchmarks/bench_data
 *.o
 *.swp
 bin/

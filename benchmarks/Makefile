@@ -30,16 +30,13 @@ OBJECTS+= $(CUOBJECTS)
 all: b/bench
 
 benchmark.o: benchmark.cpp
-	g++ -c $< -D WVTEST_CONFIGURED -o $@ $(CXXFLAGS) -I.
+	g++ -c $< -D WVTEST_CONFIGURED -o $@ $(CXXFLAGS) -I$(INCDIR)
 
 b/bench : $(BIN) $(OBJECTS) benchmark.o
 	$(NVCC) $(OBJECTS) benchmark.o -o $@ -I$(INCDIR) -lcudadevrt
 
-runbenchs: all
-	b/bench
-
 bench: all
-	./benchs $(MAKE) runbenchs
+	./benchs.sh
 
 clean::
 	rm -f *~ b/*~ *.o b/*.o b/bench

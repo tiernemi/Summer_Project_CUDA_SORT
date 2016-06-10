@@ -25,8 +25,8 @@
  * =====================================================================================
  */
 
-void Clock::startClock() {
-	start = std::chrono::system_clock::now() ;
+void Clock::start() {
+	startTime = std::chrono::system_clock::now() ;
 }
 
 /* 
@@ -36,8 +36,8 @@ void Clock::startClock() {
  * =====================================================================================
  */
 
-void Clock::stopClock() {
-	end = std::chrono::system_clock::now() ;
+void Clock::stop() {
+	endTime = std::chrono::system_clock::now() ;
 }
 
 /* 
@@ -49,7 +49,7 @@ void Clock::stopClock() {
  */
 
 float Clock::getDuration() {
-	std::chrono::duration<float> elapsed_seconds = end - start ;
+	std::chrono::duration<float> elapsed_seconds = endTime - startTime ;
 	return elapsed_seconds.count() ;
 }
 

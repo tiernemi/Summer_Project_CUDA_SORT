@@ -31,13 +31,13 @@
 
 class Clock {
  public:
-	Clock() ;
-	void startClock() ;
-	void stopClock() ;
+	Clock() { ; } ;
+	void start() ;
+	void stop() ;
 	float getDuration() ;
  private:
-	std::chrono::time_point<std::chrono::system_clock> start ; 
-	std::chrono::time_point<std::chrono::system_clock> end ; 
+	std::chrono::time_point<std::chrono::system_clock> startTime ; 
+	std::chrono::time_point<std::chrono::system_clock> endTime ; 
 } ;		/* -----  end of class Clock  ----- */
 
 #endif /* end of include guard: CLOCK_HPP_YNTIKD6P */

@@ -28,8 +28,13 @@ WVTEST_MAIN("Sorting tests")
 	std::vector<std::pair<int,float>> distances ;
 	Transforms::transformToDistVec(distances, triangles, cameras[0]) ;
 
-	CPUSorts::sortVecSTD(distances) ;
-	WVPASSEQ(Tests::checkSorted(distances),1) ;
+	std::vector<std::pair<int,float>> unsortedDistances = distances ;
+	CPUSorts::cpuSTLSort(unsortedDistances) ;
+	WVPASSEQ(Tests::checkSorted(unsortedDistances),1) ;
+
+	unsortedDistances = distances ;
+	CPUSorts::cpuBitonicSort(unsortedDistances) ;
+//	WVPASSEQ(Tests::checkSorted(unsortedDistances),1) ;
 }
 
 

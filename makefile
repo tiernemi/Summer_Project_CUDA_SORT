@@ -61,5 +61,5 @@ unit_tests: all
 	make -C unit_tests test
 
 benchs: all
-	make -C benchs runbenchs
+	make -C benchmarks bench
 
