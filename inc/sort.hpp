@@ -28,8 +28,9 @@
 /* 
  * ===  CLASS  =========================================================================
  *         Name:  Sort
- *       Fields:  
- *  Description:  
+ *       Fields:  const std::string algName - The algorithm name.
+ *  Description:  Abstract based class for all sorts. This interface makes benchmarking
+ *                and testing easier.
  * =====================================================================================
  */
 
