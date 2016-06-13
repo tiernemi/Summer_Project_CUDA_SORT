@@ -27,7 +27,6 @@
 #include "../../inc/c_flag.hpp"
 #include "../../inc/transforms.hpp"
 #include "../../inc/camera.hpp"
-#include "../../inc/cpu_sorts.hpp"
 #include "../../inc/test_funcs.hpp"
 
 // Options //
@@ -52,7 +51,7 @@ int main(int argc, char *argv[]) {
 	FileLoader::loadFile(triangles,cameras,filename.getValue()) ;
 
 	// Convert to sortable form //
-	std::vector<std::pair<int,float>> distances ;
+	std::vector<std::pair<int,float>> distances(triangles.size()) ;
 	Transforms::transformToDistVec(distances, triangles, cameras[0]) ;
 
 	return EXIT_SUCCESS ;

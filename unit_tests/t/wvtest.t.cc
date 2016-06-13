@@ -8,7 +8,8 @@
 #include "../../inc/c_flag.hpp"
 #include "../../inc/transforms.hpp"
 #include "../../inc/camera.hpp"
-#include "../../inc/cpu_sorts.hpp"
+#include "../../inc/sort.hpp"
+#include "../../inc/stl_sort.hpp"
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -25,15 +26,16 @@ WVTEST_MAIN("Sorting tests")
 	FileLoader::loadFile(triangles,cameras,filename) ;
 
 	// Convert to sortable form //
-	std::vector<std::pair<int,float>> distances ;
-	Transforms::transformToDistVec(distances, triangles, cameras[0]) ;
+	std::vector<std::pair<int,float>> unsortedDistances(triangles.size()) ;
+	Transforms::transformToDistVec(unsortedDistances, triangles, cameras[0]) ;
 
-	std::vector<std::pair<int,float>> unsortedDistances = distances ;
-	CPUSorts::cpuSTLSort(unsortedDistances) ;
-	WVPASSEQ(Tests::checkSorted(unsortedDistances),1) ;
+	std::vector<std::pair<int,float>> distances = unsortedDistances ;
+	CPUSorts::STLSort stlSorter ;
+	stlSorter.sortDistances(distances) ;
+	WVPASSEQ(Tests::checkSorted(distances),1) ;
 
-	unsortedDistances = distances ;
-	CPUSorts::cpuBitonicSort(unsortedDistances) ;
+	distances = unsortedDistances ;
+	 // CPUSorts::cpuBitonicSort(unsortedDistances) ;
 //	WVPASSEQ(Tests::checkSorted(unsortedDistances),1) ;
 }
 

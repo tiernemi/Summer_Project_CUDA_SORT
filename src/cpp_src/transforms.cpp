@@ -60,9 +60,8 @@ static float calcDistance(const Triangle & triangle, const Camera & camera) {
 
 void transformToDistVec(std::vector<std::pair<int,float>> & distances, const std::vector<Triangle> & triangles,
 		const Camera & camera) {
-	distances.reserve(triangles.size()) ;
 	for (unsigned int i = 0 ; i < triangles.size() ; ++i) {
-		distances.push_back(std::pair<int,float>(triangles[i].getID(), calcDistance(triangles[i],camera))) ;
+		distances[i] = std::pair<int,float>(triangles[i].getID(), calcDistance(triangles[i],camera)) ;
 	}
 }		/* -----  end of function transfor  ----- */
 
