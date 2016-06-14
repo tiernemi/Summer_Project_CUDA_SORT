@@ -15,7 +15,7 @@
  * =====================================================================================
  */
 
-#include "../../inc/radix_sort.hpp"
+#include "../../inc/radix_gpu_sort.hpp"
 
 void cudaRadixSort(std::unordered_map<int,float> & data) {
 	;

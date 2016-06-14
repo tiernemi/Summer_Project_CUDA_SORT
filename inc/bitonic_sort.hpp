@@ -1,15 +1,16 @@
-#ifndef STL_SORT_HPP_J60FNTL1
-#define STL_SORT_HPP_J60FNTL1
+
+#ifndef bitonic_SORT_HPP_J60FNTL1
+#define bitonic_SORT_HPP_J60FNTL1
 
 /*
  * =====================================================================================
  *
- *       Filename:  stl_sort.hpp
+ *       Filename:  bitonic_sort.hpp
  *
- *    Description:  Sort object for stl sort
+ *    Description:  Sort object for bitonic sort
  *
  *        Version:  1.0
- *        Created:  13/06/16 09:47:56
+ *        Created:  2016-06-13 13:50
  *       Revision:  none
  *       Compiler:  g++
  *
@@ -23,16 +24,16 @@
 
 /* 
  * ===  CLASS  =========================================================================
- *         Name:  stl_sort
- *  Description:  Implementaion of stl sort. Uses generic sort interface.
+ *         Name:  BitonicSort
+ *  Description:  Implementaion of bitonic sort. Uses generic sort interface.
  * =====================================================================================
  */
 
 namespace CPUSorts {
 
-class STLSort : public Sort {
+class BitonicSort : public Sort {
  public:
-	STLSort() : Sort("Stl_Sort") { ; } ;
+	BitonicSort() : Sort("Bitonic_Sort") { ; } ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera)  ;
 	virtual void sortDistances(std::vector<std::pair<int,float>> & distances) ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) ;
@@ -40,8 +41,8 @@ class STLSort : public Sort {
 	virtual void sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras ,
 			std::vector<float> & times) ;
-} ;		/* -----  end of class stl_sort  ----- */
+} ;		/* -----  end of class bitonic_sort  ----- */
 
 }
 
-#endif /* end of include guard: STL_SORT_HPP_J60FNTL1 */
+#endif /* end of include guard: bitonic_SORT_HPP_J60FNTL1 */

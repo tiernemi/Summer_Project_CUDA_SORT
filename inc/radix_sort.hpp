@@ -1,15 +1,16 @@
-#ifndef RADIX_SORT_HPP_WTWS6ZYK
-#define RADIX_SORT_HPP_WTWS6ZYK
+
+#ifndef radix_SORT_HPP_J60FNTL1
+#define radix_SORT_HPP_J60FNTL1
 
 /*
  * =====================================================================================
  *
  *       Filename:  radix_sort.hpp
  *
- *    Description:  Header file for linking cuda radix sort with cpu code.
+ *    Description:  Sort object for radix sort
  *
  *        Version:  1.0
- *        Created:  07/06/16 17:22:08
+ *        Created:  2016-06-13 13:50
  *       Revision:  none
  *       Compiler:  g++
  *
@@ -18,8 +19,30 @@
  * =====================================================================================
  */
 
-#include <unordered_map>
+// Custom Headers //
+#include "sort.hpp"
 
-void cudaRadixSort(std::unordered_map<int,float> & data) ;
+/* 
+ * ===  CLASS  =========================================================================
+ *         Name:  RadixSort
+ *  Description:  Implementaion of radix sort. Uses generic sort interface.
+ * =====================================================================================
+ */
 
-#endif /* end of include guard: RADIX_SORT_HPP_WTWS6ZYK */
+namespace CPUSorts {
+
+class RadixSort : public Sort {
+ public:
+	RadixSort() : Sort("Radix_Sort") { ; } ;
+	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera)  ;
+	virtual void sortDistances(std::vector<std::pair<int,float>> & distances) ;
+	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) ;
+	virtual void sortDistances(std::vector<std::pair<int,float>> & distances, float & sortTime) ;
+	virtual void sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) ;
+	virtual void sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras ,
+			std::vector<float> & times) ;
+} ;		/* -----  end of class radix_sort  ----- */
+
+}
+
+#endif /* end of include guard: radix_SORT_HPP_J60FNTL1 */

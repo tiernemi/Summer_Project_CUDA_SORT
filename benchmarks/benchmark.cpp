@@ -19,6 +19,7 @@
 #include <iostream>
 #include <vector>
 #include <iostream>
+#include <random>
 #include <string>
 #include <unordered_map>
 #include <libgen.h>
@@ -37,27 +38,38 @@
 #include "../inc/test_funcs.hpp"
 #include "../inc/sort.hpp"
 #include "../inc/stl_sort.hpp"
+#include "../inc/bitonic_sort.hpp"
 
 void runCPUBenchs(std::vector<Sort*> & sorts,
 		std::vector<Triangle> & triangles, std::vector<Camera> & camera, 
-		std::vector<std::vector<float>> & times) ;
-void outputTimes(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
-		std::vector<unsigned int> & numElements, std::vector<std::string> filenames) ;
+		std::vector<std::vector<float>> & times, std::vector<std::vector<float>> & percentSorts) ;
+void outputResults(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
+		std::vector<unsigned int> & numElements, std::vector<std::string> & filenames, 
+		std::vector<std::vector<std::vector<float>>> & percentSorts) ;
+float calcPercentSorted(const std::vector<Triangle> & triangles, const Camera & camera) ;
+
+std::mt19937 gen ;
 
 int main(int argc, char *argv[]) {
+
+	gen.seed(199293939) ;
 
 	// Variables storing benchmark data. //
 	std::vector<Triangle> triangles ;
 	std::vector<Camera> cameras ;
 	std::vector<std::vector<std::vector<float>>> times ;
+	std::vector<std::vector<std::vector<float>>> percentSorts ;
 	std::vector<Sort*> sorts ;
 	std::vector<std::string> names ;
 	std::vector<std::string> filenames ;
 	std::vector<unsigned int> numElements ;
 
+	// Run time benchmarks. //
 	CPUSorts::STLSort stlSorter ;
+	CPUSorts::BitonicSort bitonicSorter ;
 	// Add sorts. //
 	sorts.push_back(&stlSorter) ;
+	sorts.push_back(&bitonicSorter) ;
 
 	// Read in file names. //
 	for (int i = 1 ; i < argc ; ++i) {
@@ -65,17 +77,19 @@ int main(int argc, char *argv[]) {
 	}
 	numElements.resize(filenames.size()) ;
 	times.resize(filenames.size()) ;
+	percentSorts.resize(filenames.size()) ;
+
 
 	// For each filename, load and run benchmarks. //
 	for (unsigned int i = 0 ; i < filenames.size() ; ++i) {
 		FileLoader::loadFile(triangles,cameras,filenames[i]) ;
 		numElements[i] = triangles.size() ;
 		// Run CPU sorts for this data set. //
-		runCPUBenchs(sorts,triangles,cameras,times[i]) ;
+		runCPUBenchs(sorts,triangles,cameras,times[i],percentSorts[i]) ;
 	}
 
 	// Output time data. //
-	outputTimes(times, sorts, numElements, filenames) ;
+	outputResults(times, sorts, numElements, filenames,percentSorts) ;
 
 	return EXIT_SUCCESS ;
 }
@@ -90,12 +104,23 @@ int main(int argc, char *argv[]) {
  */
 
 void runCPUBenchs(std::vector<Sort*> & sorts, std::vector<Triangle> & triangles
-		, std::vector<Camera> & cameras, std::vector<std::vector<float>> & times) {
+		, std::vector<Camera> & cameras, std::vector<std::vector<float>> & times
+		, std::vector<std::vector<float>> & percentSorts) {
 
+	std::vector<Triangle> tempTriangles = triangles ;
 	for (unsigned int i = 0 ; i < sorts.size() ; ++i) {
+		tempTriangles = triangles ;
 		std::vector<float> newTimes ;
-		sorts[i]->sortTriangles(triangles,cameras,newTimes) ;
+		std::vector<float> newSorts ;
+		for (unsigned int j = 0 ; j < cameras.size() ; ++j) {
+			float sortTime = 0 ;
+			newSorts.push_back(Tests::calcPercentSorted(tempTriangles,cameras[j])) ;
+			sorts[i]->sortTriangles(tempTriangles,cameras[j],sortTime) ;
+			newTimes.push_back(sortTime) ;
+		}
+		std::vector<float> newSortPercents ;
 		times.push_back(newTimes) ;
+		percentSorts.push_back(newSorts) ;
 	}
 }		/* -----  end of function runBenchs  ----- */
 
@@ -108,8 +133,9 @@ void runCPUBenchs(std::vector<Sort*> & sorts, std::vector<Triangle> & triangles
  * =====================================================================================
  */
 
-void outputTimes(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
-		std::vector<unsigned int> & numElements, std::vector<std::string> filenames) {
+void outputResults(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
+		std::vector<unsigned int> & numElements, std::vector<std::string> & filenames, 
+		std::vector<std::vector<std::vector<float>>> & percentSorts) {
 	for (unsigned int i = 0 ; i < numElements.size() ; ++i) {
 		for (unsigned int j = 0 ; j < times[i].size() ; ++j) {	
 			char base[1000] ;
@@ -118,10 +144,14 @@ void outputTimes(std::vector<std::vector<std::vector<float>>> & times, std::vect
 				std::to_string(numElements[i]) + basename(base) ;
 			std::ofstream output(datFileName) ;
 			for (unsigned int k = 0 ; k < times[i][j].size() ; ++k) {
-				output << numElements[i] << " " << times[i][j][k] << " " <<  numElements[i]/(times[i][j][k]*1E6) 
-					<< std::endl ;
+				float sortRate = numElements[i]/(times[i][j][k]*1E6) ;
+				output << numElements[i] << " " << times[i][j][k] << " " <<  sortRate 
+				<< " " << percentSorts[i][j][k] << std::endl ;
 			}
 			output.close() ;
 		}
 	}
 }		/* -----  end of function   ----- */
+
+
+

@@ -1,0 +1,123 @@
+/*
+ * =====================================================================================
+ *
+ *       Filename:  radix_sort.cpp
+ *
+ *    Description:  Implementaion of radix sort on cpu.
+ *
+ *        Version:  1.0
+ *        Created:  2016-06-13 13:52
+ *       Revision:  none
+ *       Compiler:  g++
+ *
+ *         Author:  Michael Tierney (MT), tiernemi@tcd.ie
+ *
+ * =====================================================================================
+ */
+
+#include <vector>
+#include <iostream>
+#include <tuple>
+
+// Custom Headers //
+#include "../../inc/radix_sort.hpp"
+#include "../../inc/transforms.hpp"
+#include "../../inc/clock.hpp"
+#include "../../inc/test_funcs.hpp"
+
+namespace CPUSorts {
+
+static void mergeUp(std::vector<std::pair<int,float>>::iterator iter, int length) ;
+static void radixBuildNorm(std::vector<std::pair<int,float>> & distances) ;
+
+/* 
+ * ===  MEMBER FUNCTION CLASS : RadixSort  ==============================================
+ *         Name:  sortTriangles
+ *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
+ *                std::vector<Camera> & cameras - Vector of cameras.
+ *  Description:  Uses radix sort to sort triangles.
+ * =====================================================================================
+ */
+
+void RadixSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
+	// Convert to sortable form //
+	std::vector<std::pair<int,float>> distances(triangles.size()) ;
+	std::vector<Triangle> temp = triangles ;
+	std::vector<Triangle> orig_triangles = triangles ;
+	for (unsigned int i = 0 ; i < cameras.size() ; ++i) {
+		Transforms::transformToDistVec(distances, triangles, cameras[i]) ;
+		sortDistances(distances) ;
+		// Reorder triangles. //
+		for (unsigned int k = 0 ; k < distances.size() ; ++k) {
+			temp[k] = orig_triangles[distances[k].first] ;
+		}
+		triangles = temp ;
+	}
+}		/* -----  end of member function function  ----- */
+
+/* 
+ * ===  MEMBER FUNCTION CLASS : RadixSort  ==============================================
+ *         Name:  function
+ *    Arguments:  std::vector<std::pair<int,float>> & distances - Vector of distances and
+ *                ids.
+ *  Description:  Sorts vector of distances based on camera location. Use radix sort.
+ * =====================================================================================
+ */
+
+void RadixSort::sortDistances(std::vector<std::pair<int,float>> & distances) {
+	radixBuildNorm(distances) ;
+}		/* -----  end of member function function  ----- */
+
+/* 
+ * ===  MEMBER FUNCTION CLASS : RadixSort  ==============================================
+ *         Name:  sortTriangles
+ *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
+ *                std::vector<Camera> & cameras - Vector of cameras.
+ *                std::vector<float> & times - Times taken to sort for eacg camera.
+ *  Description:  Uses radix sort to sort triangles and times these sorts.
+ * =====================================================================================
+ */
+
+void RadixSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras ,
+		std::vector<float> & times) {
+
+	// Convert to sortable form //
+	std::vector<std::pair<int,float>> distances(triangles.size()) ;
+	std::vector<Triangle> temp = triangles ;
+	std::vector<Triangle> orig_triangles = triangles ;
+	std::vector<float> newTimes ;
+	for (unsigned int i = 0 ; i < cameras.size() ; ++i) {
+		Transforms::transformToDistVec(distances, triangles, cameras[i]) ;
+		float sortTime = 0.f ;
+		sortDistances(distances, sortTime) ;
+		// Reorder triangles. //
+		for (unsigned int k = 0 ; k < distances.size() ; ++k) {
+			temp[k] = orig_triangles[distances[k].first] ;
+		}
+		triangles = temp ;
+		newTimes.push_back(sortTime) ;
+	}
+	times = newTimes ;
+}		/* -----  end of member function function  ----- */
+
+/* 
+ * ===  MEMBER FUNCTION CLASS : RadixSort  ==============================================
+ *         Name:  function
+ *    Arguments:  std::vector<std::pair<int,float>> & distances - Vector of distances and
+ *                ids.
+ *                float & sortTime - Time taken to sort.
+ *  Description:  Sorts vector of distances based on camera location. Use std sort.
+ * =====================================================================================
+ */
+
+void RadixSort::sortDistances(std::vector<std::pair<int,float>> & distances, float & sortTime) {
+	Clock clock ;
+	clock.start() ;
+	radixBuildNorm(distances) ;
+	clock.stop() ;
+	sortTime = clock.getDuration() ;
+}		/* -----  end of member function function  ----- */
+
+
+
+}

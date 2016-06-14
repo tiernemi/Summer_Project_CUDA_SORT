@@ -1,12 +1,12 @@
 /*
  * =====================================================================================
  *
- *       Filename:  stl_sort.cpp
+ *       Filename:  radix_sort.cpp
  *
- *    Description:  Implementaion of stl sort on cpu.
+ *    Description:  Implementaion of radix sort on cpu.
  *
  *        Version:  1.0
- *        Created:  13/06/16 09:53:32
+ *        Created:  2016-06-13 13:52
  *       Revision:  none
  *       Compiler:  g++
  *
@@ -16,22 +16,31 @@
  */
 
 #include <vector>
-#include <algorithm>
 #include <iostream>
+#include <tuple>
 
 // Custom Headers //
-#include "../../inc/stl_sort.hpp"
+#include "../../inc/radix_sort.hpp"
 #include "../../inc/transforms.hpp"
 #include "../../inc/clock.hpp"
 #include "../../inc/test_funcs.hpp"
 
-
 namespace CPUSorts {
 
-static bool comparVec(const std::pair<int,float> & el1, const std::pair<int,float> & el2) ;
+typedef long unsigned int dword ;
+typedef unsigned int word ;
+static word * byteHistogram ;
+static word * offsets ;
+static word currentSize ;
+static word prevSize ;
+static word * indices1 ;
+static word * indices2 ;
+
+
+static void createHistogram(std::vector<int,float> & distances) ;
 
 /* 
- * ===  MEMBER FUNCTION CLASS : StlSort  ==============================================
+ * ===  MEMBER FUNCTION CLASS : RadixSort  ==============================================
  *         Name:  sortTriangles
  *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
  *                Camera & camera - Camera to sort relative to.
@@ -39,7 +48,7 @@ static bool comparVec(const std::pair<int,float> & el1, const std::pair<int,floa
  * =====================================================================================
  */
 
-void STLSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera) {
+void RadixSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera) {
 	// Convert to sortable form //
 	std::vector<std::pair<int,float>> distances(triangles.size()) ;
 	std::vector<Triangle> temp = triangles ;
@@ -53,7 +62,7 @@ void STLSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera) 
 }		/* -----  end of member function function  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : STLSort  ==============================================
+ * ===  MEMBER FUNCTION CLASS : RadixSort  ==============================================
  *         Name:  function
  *    Arguments:  std::vector<std::pair<int,float>> & distances - Vector of distances and
  *                ids.
@@ -61,12 +70,11 @@ void STLSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera) 
  * =====================================================================================
  */
 
-void STLSort::sortDistances(std::vector<std::pair<int,float>> & distances) {
-	std::sort(distances.begin(), distances.end(), comparVec) ;
+void RadixSort::sortDistances(std::vector<std::pair<int,float>> & distances) {
 }		/* -----  end of member function function  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : StlSort  ==============================================
+ * ===  MEMBER FUNCTION CLASS : RadixSort  ==============================================
  *         Name:  sortTriangles
  *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
  *                Camera & camera - Camera to sort relative to.
@@ -75,21 +83,21 @@ void STLSort::sortDistances(std::vector<std::pair<int,float>> & distances) {
  * =====================================================================================
  */
 
-void STLSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) {
-
+void RadixSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) {
 	// Convert to sortable form //
 	std::vector<std::pair<int,float>> distances(triangles.size()) ;
 	std::vector<Triangle> temp = triangles ;
-	Transforms::transformToDistVec(distances,temp,camera) ;
+	Transforms::transformToDistVec(distances, triangles, camera) ;
 	sortDistances(distances, sortTime) ;
 	// Reorder triangles. //
 	for (unsigned int k = 0 ; k < distances.size() ; ++k) {
-		triangles[k] = temp[distances[k].first] ;
+		temp[k] = triangles[distances[k].first] ;
 	}
+	triangles = temp ;
 }		/* -----  end of member function function  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : STLSort  ==============================================
+ * ===  MEMBER FUNCTION CLASS : RadixSort  ==============================================
  *         Name:  function
  *    Arguments:  std::vector<std::pair<int,float>> & distances - Vector of distances and
  *                ids.
@@ -98,40 +106,39 @@ void STLSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera, 
  * =====================================================================================
  */
 
-void STLSort::sortDistances(std::vector<std::pair<int,float>> & distances, float & sortTime) {
+void RadixSort::sortDistances(std::vector<std::pair<int,float>> & distances, float & sortTime) {
 	Clock clock ;
 	clock.start() ;
-	std::sort(distances.begin(), distances.end(), comparVec) ;
 	clock.stop() ;
 	sortTime = clock.getDuration() ;
 }		/* -----  end of member function function  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : STLSort  ===========================================
+ * ===  MEMBER FUNCTION CLASS : RadixSort  ===========================================
  *         Name:  sortTriangles
  *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
  *                std::vector<Camera> & cameras - Vector of cameras.
- *  Description:  Uses stl sort to sort triangles based on vector of cameras.
+ *  Description:  Uses radix sort to sort triangles based on vector of cameras.
  * =====================================================================================
  */
 
-void STLSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
+void RadixSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
 	for (unsigned int i = 0 ; i < cameras.size() ; ++i) {
 		sortTriangles(triangles,cameras[i]) ;
 	}
 }		/* -----  end of member function function  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : STLSort  ===========================================
+ * ===  MEMBER FUNCTION CLASS : RadixSort  ===========================================
  *         Name:  sortTriangles
  *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
  *                std::vector<Camera> & cameras - Vector of cameras.
  *                std::vector<float> times - Vector of sort times for each camera.
- *  Description:  Uses stl sort to sort triangles based on vector of cameras.
+ *  Description:  Uses radix sort to sort triangles based on vector of cameras.
  * =====================================================================================
  */
 
-void STLSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras,
+void RadixSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras,
 		std::vector<float> & times) {
 	std::vector<float> newTimes ;
 	for (unsigned int i = 0 ; i < cameras.size() ; ++i) {
@@ -143,8 +150,5 @@ void STLSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camer
 }		/* -----  end of member function function  ----- */
 
 
-static bool comparVec(const std::pair<int,float> & el1, const std::pair<int,float> & el2)  {
-		return (el1.second < el2.second) ;
-}
 
 }

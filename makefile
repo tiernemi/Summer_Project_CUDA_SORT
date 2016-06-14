@@ -8,7 +8,7 @@ LINK= nvcc
 CFLAGS		= -W -Wall -lcuda $(PARALLEL) $(DEFINES)
 CXXFLAGS    = -lGL -lglut -lpthread -llibtiff  -O3 -finline-functions -ffast-math -fomit-frame-pointer -funroll-loops -W -Wall -lcuda $(PARALLEL) $(DEFINES) -std=c++11 -lm
 
-NVCCFLAGS	= -O5 -DWITH_MY_DEBUG -std=c++11 -arch=sm_35 --relocatable-device-code true -lcudadevrt --use_fast_math 
+NVCCFLAGS	= -O5 -DWITH_MY_DEBUG -std=c++11 -arch=compute_35 -code=sm_35  --relocatable-device-code true -lcudadevrt --use_fast_math 
 LIBS		= $(PARALLEL)
 INCPATH		= /usr/include/
 
@@ -55,7 +55,7 @@ clean:
 	rm -rf $(BIN) $(TARGET)
 
 test: all
-	./sort -f data/testData.txt
+	./sort -f data/testDataP2.txt
 
 unit_tests: all
 	make -C unit_tests test

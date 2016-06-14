@@ -10,6 +10,7 @@
 #include "../../inc/camera.hpp"
 #include "../../inc/sort.hpp"
 #include "../../inc/stl_sort.hpp"
+#include "../../inc/bitonic_sort.hpp"
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -22,7 +23,7 @@ WVTEST_MAIN("Sorting tests")
 {
 	std::vector<Triangle> triangles ;
 	std::vector<Camera> cameras ;
-	std::string filename("/home/users/mschpc/2015/tiernemi/project/data/testData.txt") ;
+	std::string filename("/home/users/mschpc/2015/tiernemi/project/data/testDataP2.txt") ;
 	FileLoader::loadFile(triangles,cameras,filename) ;
 
 	// Convert to sortable form //
@@ -35,8 +36,9 @@ WVTEST_MAIN("Sorting tests")
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 
 	distances = unsortedDistances ;
-	 // CPUSorts::cpuBitonicSort(unsortedDistances) ;
-//	WVPASSEQ(Tests::checkSorted(unsortedDistances),1) ;
+	CPUSorts::BitonicSort bitonicSorter ;
+	bitonicSorter.sortDistances(distances) ;
+	WVPASSEQ(Tests::checkSorted(distances),1) ;
 }
 
 

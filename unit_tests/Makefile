@@ -5,7 +5,7 @@ NVCC= /usr/local/cuda/bin/nvcc
 #Flags
 #PARALLEL	= -fopenmp
 #DEFINES		= -DWITH_OPENMP
-CXXFLAGS    = -lGL -lglut -lpthread -llibtiff  -O3 -finline-functions -ffast-math -fomit-frame-pointer -funroll-loops -W -Wall -lcuda $(PARALLEL) $(DEFINES) -std=c++11 -lm
+CXXFLAGS    = -lGL -lglut -lpthread -llibtiff  -O3 -finline-functions -ffast-math -fomit-frame-pointer -funroll-loops -W -Wall -lcuda $(PARALLEL) $(DEFINES) -std=c++11 -lm 
 NVCCFLAGS	= -O5 -DWITH_MY_DEBUG -std=c++11 -arch=sm_35 --relocatable-device-code true -lcudadevrt --use_fast_math 
 LIBS		= $(PARALLEL)
 INCPATH		= /usr/include/
