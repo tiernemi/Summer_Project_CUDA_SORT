@@ -39,6 +39,7 @@
 #include "../inc/sort.hpp"
 #include "../inc/stl_sort.hpp"
 #include "../inc/bitonic_sort.hpp"
+#include "../inc/radix_sort8.hpp"
 
 void runCPUBenchs(std::vector<Sort*> & sorts,
 		std::vector<Triangle> & triangles, std::vector<Camera> & camera, 
@@ -67,9 +68,11 @@ int main(int argc, char *argv[]) {
 	// Run time benchmarks. //
 	CPUSorts::STLSort stlSorter ;
 	CPUSorts::BitonicSort bitonicSorter ;
+	CPUSorts::RadixSort8 radixSorter ;
 	// Add sorts. //
 	sorts.push_back(&stlSorter) ;
 	sorts.push_back(&bitonicSorter) ;
+	sorts.push_back(&radixSorter) ;
 
 	// Read in file names. //
 	for (int i = 1 ; i < argc ; ++i) {

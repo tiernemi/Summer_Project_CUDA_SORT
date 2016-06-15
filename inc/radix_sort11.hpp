@@ -1,11 +1,11 @@
 
-#ifndef radix_SORT_HPP_J60FNTL1
-#define radix_SORT_HPP_J60FNTL1
+#ifndef radix_SORT_HPP11_J60FNTL1
+#define radix_SORT_HPP11_J60FNTL1
 
 /*
  * =====================================================================================
  *
- *       Filename:  radix_sort.hpp
+ *       Filename:  radix_sort11.hpp
  *
  *    Description:  Sort object for radix sort
  *
@@ -24,16 +24,17 @@
 
 /* 
  * ===  CLASS  =========================================================================
- *         Name:  RadixSort
- *  Description:  Implementaion of radix sort. Uses generic sort interface.
+ *         Name:  RadixSort11
+ *  Description:  Implementaion of radix sort using 11 bit histograms as suggested by
+ *                Hoff (stereopsis). Uses generic sort interface.
  * =====================================================================================
  */
 
 namespace CPUSorts {
 
-class RadixSort : public Sort {
+class RadixSort11 : public Sort {
  public:
-	RadixSort() : Sort("Radix_Sort") { ; } ;
+	RadixSort11() : Sort("Radix_Sort") { ; } ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera)  ;
 	virtual void sortDistances(std::vector<std::pair<int,float>> & distances) ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) ;

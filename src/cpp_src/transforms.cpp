@@ -80,8 +80,9 @@ void transformToDistVec(std::vector<std::pair<int,float>> & distances, const std
 
 void transformToDistMap(std::unordered_map<int,float> & distances, const std::vector<Triangle> & triangles,
 		const Camera & camera) {
+	distances.clear() ;
 	for (unsigned int i = 0 ; i < triangles.size() ; ++i) {
-		distances.insert(std::pair<int,float>(triangles[i].getID(), calcDistance(triangles[i],camera))) ;
+		distances[triangles[i].getID()] = calcDistance(triangles[i],camera) ;
 	}
 }		/* -----  end of function transfor  ----- */
 

@@ -20,9 +20,12 @@
  */
 
 #include "triangle.hpp"
+#include <unordered_map>
 
 namespace Transforms {
 	void transformToDistVec(std::vector<std::pair<int,float>> & distances, 
+			const std::vector<Triangle> & triangles, const Camera & camera) ;
+	void transformToDistMap(std::unordered_map<int,float> & distances, 
 			const std::vector<Triangle> & triangles, const Camera & camera) ;
 }
 

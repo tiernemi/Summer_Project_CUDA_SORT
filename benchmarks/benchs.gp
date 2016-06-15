@@ -5,8 +5,6 @@ set ylabel "Sort-Rate (M/s)"
 #set xtics rotate out
 
 set xlabel "Camera ID"
-set yrange [0:100]
-set xrange [0:55]
 datFiles = system('ls bench_data/times*')
 namesFiles =  system("ls bench_data/times* | gawk 'match($0, /times([A-Z][a-z]*)_([A-Z][a-z]*)/, a) {print a[1]a[2]}' ")
 

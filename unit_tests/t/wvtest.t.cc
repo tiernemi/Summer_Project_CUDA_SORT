@@ -11,6 +11,8 @@
 #include "../../inc/sort.hpp"
 #include "../../inc/stl_sort.hpp"
 #include "../../inc/bitonic_sort.hpp"
+#include "../../inc/radix_sort8.hpp"
+#include "../../inc/radix_sort11.hpp"
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -38,6 +40,12 @@ WVTEST_MAIN("Sorting tests")
 	distances = unsortedDistances ;
 	CPUSorts::BitonicSort bitonicSorter ;
 	bitonicSorter.sortDistances(distances) ;
+	WVPASSEQ(Tests::checkSorted(distances),1) ;
+
+	distances = unsortedDistances ;
+	CPUSorts::RadixSort8 radixSorter8 ;
+	CPUSorts::RadixSort11 radixSorter11 ;
+	radixSorter8.sortDistances(distances) ;
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 }
 
