@@ -5,7 +5,7 @@
 /*
  * =====================================================================================
  *
- *       Filename:  radix_sort11.hpp
+ *       Filename:  radix_sort_hoff.hpp
  *
  *    Description:  Sort object for radix sort
  *
@@ -24,7 +24,7 @@
 
 /* 
  * ===  CLASS  =========================================================================
- *         Name:  RadixSort11
+ *         Name:  RadixSortHoff
  *  Description:  Implementaion of radix sort using 11 bit histograms as suggested by
  *                Hoff (stereopsis). Uses generic sort interface.
  * =====================================================================================
@@ -32,9 +32,9 @@
 
 namespace CPUSorts {
 
-class RadixSort11 : public Sort {
+class RadixSortHoff : public Sort {
  public:
-	RadixSort11() : Sort("Radix_Sort") { ; } ;
+	RadixSortHoff() : Sort("Radix_SortHoff") { ; } ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera)  ;
 	virtual void sortDistances(std::vector<std::pair<int,float>> & distances) ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) ;

@@ -8,11 +8,7 @@
 #include "../../inc/c_flag.hpp"
 #include "../../inc/transforms.hpp"
 #include "../../inc/camera.hpp"
-#include "../../inc/sort.hpp"
-#include "../../inc/stl_sort.hpp"
-#include "../../inc/bitonic_sort.hpp"
-#include "../../inc/radix_sort8.hpp"
-#include "../../inc/radix_sort11.hpp"
+#include "../../inc/sort_algs.hpp"
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -43,9 +39,13 @@ WVTEST_MAIN("Sorting tests")
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 
 	distances = unsortedDistances ;
-	CPUSorts::RadixSort8 radixSorter8 ;
-	CPUSorts::RadixSort11 radixSorter11 ;
-	radixSorter8.sortDistances(distances) ;
+	CPUSorts::RadixSortPT radixSorterPT ;
+	radixSorterPT.sortDistances(distances) ;
+	WVPASSEQ(Tests::checkSorted(distances),1) ;
+
+	distances = unsortedDistances ;
+	CPUSorts::RadixSortHoff radixSorterHoff ;
+	radixSorterHoff.sortDistances(distances) ;
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 }
 

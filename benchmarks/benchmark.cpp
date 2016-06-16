@@ -36,10 +36,7 @@
 #include "../inc/camera.hpp"
 #include "../inc/clock.hpp"
 #include "../inc/test_funcs.hpp"
-#include "../inc/sort.hpp"
-#include "../inc/stl_sort.hpp"
-#include "../inc/bitonic_sort.hpp"
-#include "../inc/radix_sort8.hpp"
+#include "../inc/sort_algs.hpp"
 
 void runCPUBenchs(std::vector<Sort*> & sorts,
 		std::vector<Triangle> & triangles, std::vector<Camera> & camera, 
@@ -68,11 +65,13 @@ int main(int argc, char *argv[]) {
 	// Run time benchmarks. //
 	CPUSorts::STLSort stlSorter ;
 	CPUSorts::BitonicSort bitonicSorter ;
-	CPUSorts::RadixSort8 radixSorter ;
+	CPUSorts::RadixSortPT radixSorterPT ;
+	CPUSorts::RadixSortHoff radixSorterHoff ;
 	// Add sorts. //
 	sorts.push_back(&stlSorter) ;
 	sorts.push_back(&bitonicSorter) ;
-	sorts.push_back(&radixSorter) ;
+	sorts.push_back(&radixSorterPT) ;
+	sorts.push_back(&radixSorterHoff) ;
 
 	// Read in file names. //
 	for (int i = 1 ; i < argc ; ++i) {
@@ -81,7 +80,6 @@ int main(int argc, char *argv[]) {
 	numElements.resize(filenames.size()) ;
 	times.resize(filenames.size()) ;
 	percentSorts.resize(filenames.size()) ;
-
 
 	// For each filename, load and run benchmarks. //
 	for (unsigned int i = 0 ; i < filenames.size() ; ++i) {
@@ -100,9 +98,13 @@ int main(int argc, char *argv[]) {
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  runBenchs
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ *    Arguments:  std::vector<Sort*> & sorts - Array of sort pointers.
+ *                std::vector<Triangle> & triangles - Vector of triangle objects.
+ *                std::vector<Camera> & cameras - Vector of cameras.
+ *                std::vector<std::vector<float>> & times - Vector for timing data.
+ *                std::vector<std::vector<float>> & percentSorts - Vector for percentage
+ *                sorted.
+ *  Description:  Runs timing and coherency benchmarks for each sorting algorithm.
  * =====================================================================================
  */
 
@@ -129,10 +131,14 @@ void runCPUBenchs(std::vector<Sort*> & sorts, std::vector<Triangle> & triangles
 
 /* 
  ======================================================================================
- *         Name:  
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ *         Name:  outputResults
+ *    Arguments:  std::vector<std::vector<std::vector<float>>> & times - All bench times.
+ *                std::vector<Sort*> & sorts - Array of sorting algorithms.
+ *		          std::vector<unsigned int> & numElements - Number of elements per file.
+ *		          std::vector<std::string> & filenames - Names of the files.
+ *                std::vector<std::vector<std::vector<float>>> & percentSorts - All
+ *                bench sorting percentage data.
+ *  Description:  Outputs benchmark data.
  * =====================================================================================
  */
 

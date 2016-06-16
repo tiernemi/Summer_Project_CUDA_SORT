@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename:  radix_sort.cpp
+ *       Filename:  radix_sort_pt.cpp
  *
  *    Description:  Implementaion of radix sort on cpu.
  *
@@ -21,7 +21,7 @@
 #include <string.h>
 
 // Custom Headers //
-#include "../../inc/radix_sort8.hpp"
+#include "../../inc/radix_sort_pt.hpp"
 #include "../../inc/transforms.hpp"
 #include "../../inc/clock.hpp"
 #include "../../inc/test_funcs.hpp"
@@ -32,15 +32,14 @@ typedef unsigned char ubyte ;
 static const unsigned int histSize = 1024 ;
 static const unsigned int offSize = 256 ;
 
-
+static void sortRadices(const float * input2, unsigned int * indices1, unsigned int size) ;
 static bool createHistogram(const float * buffer, unsigned int * indices1, unsigned int size, 
 		unsigned int * byteHistogram) ;
-static void sortRadices(const float * input2, unsigned int * indices1, unsigned int size) ;
 static bool performPassCheck(int histIndex, unsigned int * & count, unsigned int size, const float * input,
 		unsigned int * byteHistogram) ;
 
 /* 
- * ===  MEMBER FUNCTION CLASS : RadixSort8  ==============================================
+ * ===  MEMBER FUNCTION CLASS : RadixSortPT  ==============================================
  *         Name:  sortTriangles
  *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
  *                Camera & camera - Camera to sort relative to.
@@ -48,7 +47,7 @@ static bool performPassCheck(int histIndex, unsigned int * & count, unsigned int
  * =====================================================================================
  */
 
-void RadixSort8::sortTriangles(std::vector<Triangle> & triangles, Camera & camera) {
+void RadixSortPT::sortTriangles(std::vector<Triangle> & triangles, Camera & camera) {
 	// Convert to sortable form //
 	std::vector<std::pair<int,float>> distances(triangles.size()) ;
 	std::vector<Triangle> temp = triangles ;
@@ -62,7 +61,7 @@ void RadixSort8::sortTriangles(std::vector<Triangle> & triangles, Camera & camer
 }		/* -----  end of member function function  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : RadixSort8  ==============================================
+ * ===  MEMBER FUNCTION CLASS : RadixSortPT  ==============================================
  *         Name:  function
  *    Arguments:  std::vector<std::pair<int,float>> & distances - Vector of distances and
  *                ids.
@@ -70,7 +69,7 @@ void RadixSort8::sortTriangles(std::vector<Triangle> & triangles, Camera & camer
  * =====================================================================================
  */
 
-void RadixSort8::sortDistances(std::vector<std::pair<int,float>> & distances) {
+void RadixSortPT::sortDistances(std::vector<std::pair<int,float>> & distances) {
 	float * input = new float[distances.size()] ;
 	unsigned int * indices = new unsigned int[distances.size()] ;
 	for (unsigned int i = 0 ; i < distances.size() ; ++i) {
@@ -88,7 +87,7 @@ void RadixSort8::sortDistances(std::vector<std::pair<int,float>> & distances) {
 }		/* -----  end of member function function  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : RadixSort8  ==============================================
+ * ===  MEMBER FUNCTION CLASS : RadixSortPT  ==============================================
  *         Name:  sortTriangles
  *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
  *                Camera & camera - Camera to sort relative to.
@@ -97,7 +96,7 @@ void RadixSort8::sortDistances(std::vector<std::pair<int,float>> & distances) {
  * =====================================================================================
  */
 
-void RadixSort8::sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) {
+void RadixSortPT::sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) {
 	// Convert to sortable form //
 	std::vector<std::pair<int,float>> distances(triangles.size()) ;
 	std::vector<Triangle> temp = triangles ;
@@ -111,7 +110,7 @@ void RadixSort8::sortTriangles(std::vector<Triangle> & triangles, Camera & camer
 }		/* -----  end of member function function  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : RadixSort8  ==============================================
+ * ===  MEMBER FUNCTION CLASS : RadixSortPT  ==============================================
  *         Name:  function
  *    Arguments:  std::vector<std::pair<int,float>> & distances - Vector of distances and
  *                ids.
@@ -120,7 +119,7 @@ void RadixSort8::sortTriangles(std::vector<Triangle> & triangles, Camera & camer
  * =====================================================================================
  */
 
-void RadixSort8::sortDistances(std::vector<std::pair<int,float>> & distances, float & sortTime) {
+void RadixSortPT::sortDistances(std::vector<std::pair<int,float>> & distances, float & sortTime) {
 	float * input = new float[distances.size()] ;
 	unsigned int * indices = new unsigned int[distances.size()] ;
 	for (unsigned int i = 0 ; i < distances.size() ; ++i) {
@@ -142,7 +141,7 @@ void RadixSort8::sortDistances(std::vector<std::pair<int,float>> & distances, fl
 }		/* -----  end of member function function  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : RadixSort8  ===========================================
+ * ===  MEMBER FUNCTION CLASS : RadixSortPT  ===========================================
  *         Name:  sortTriangles
  *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
  *                std::vector<Camera> & cameras - Vector of cameras.
@@ -150,14 +149,14 @@ void RadixSort8::sortDistances(std::vector<std::pair<int,float>> & distances, fl
  * =====================================================================================
  */
 
-void RadixSort8::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
+void RadixSortPT::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
 	for (unsigned int i = 0 ; i < cameras.size() ; ++i) {
 		sortTriangles(triangles,cameras[i]) ;
 	}
 }		/* -----  end of member function function  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : RadixSort8  ===========================================
+ * ===  MEMBER FUNCTION CLASS : RadixSortPT  ===========================================
  *         Name:  sortTriangles
  *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
  *                std::vector<Camera> & cameras - Vector of cameras.
@@ -166,7 +165,7 @@ void RadixSort8::sortTriangles(std::vector<Triangle> & triangles, std::vector<Ca
  * =====================================================================================
  */
 
-void RadixSort8::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras,
+void RadixSortPT::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras,
 		std::vector<float> & times) {
 	std::vector<float> newTimes ;
 	for (unsigned int i = 0 ; i < cameras.size() ; ++i) {
@@ -184,7 +183,7 @@ void RadixSort8::sortTriangles(std::vector<Triangle> & triangles, std::vector<Ca
  *                unsigned int * indicesEx - Indices to be overwitten. Contains final
  *                indices.
  *                unsigned int size - Size of input.
- *  Description:  Performs Peter Terdiman's radix sort algorithm for 4-  8 bit histograms.
+ *  Description:  Performs Peter Terdiman's radix sort algorithm for 4 - 8 bit histograms.
  * =====================================================================================
  */
 
@@ -278,6 +277,7 @@ static bool createHistogram(const float * buffer, unsigned int * indices1, unsig
 			break ;
 		}
 		prevVal = val ;
+		// Fill histograms for each byte. //
 		hist0[*p++]++ ;
 		hist1[*p++]++ ;
 		hist2[*p++]++ ;
@@ -288,6 +288,7 @@ static bool createHistogram(const float * buffer, unsigned int * indices1, unsig
 		return true ;
 	} else {
 		while (p != pe) {
+			// Fill histograms for each byte. //
 			hist0[*p++]++ ;
 			hist1[*p++]++ ;
 			hist2[*p++]++ ;

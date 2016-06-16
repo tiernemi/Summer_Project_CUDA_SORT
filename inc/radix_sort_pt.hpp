@@ -5,7 +5,7 @@
 /*
  * =====================================================================================
  *
- *       Filename:  radix_sort.hpp
+ *       Filename:  radix_sort_pt.hpp
  *
  *    Description:  Sort object for radix sort
  *
@@ -24,7 +24,7 @@
 
 /* 
  * ===  CLASS  =========================================================================
- *         Name:  RadixSort8
+ *         Name:  RadixSortPT
  *  Description:  Implementaion of radix sort. Uses generic sort interface. Uses 8 bit
  *                histogram suggested by Pierre Terdiman (codercorner).
  * =====================================================================================
@@ -32,9 +32,9 @@
 
 namespace CPUSorts {
 
-class RadixSort8 : public Sort {
+class RadixSortPT : public Sort {
  public:
-	RadixSort8() : Sort("Radix_Sort") { ; } ;
+	RadixSortPT() : Sort("Radix_SortPT") { ; } ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera)  ;
 	virtual void sortDistances(std::vector<std::pair<int,float>> & distances) ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) ;
