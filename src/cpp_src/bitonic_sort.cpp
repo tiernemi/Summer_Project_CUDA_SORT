@@ -146,9 +146,10 @@ void BitonicSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<C
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  MergeUp
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ *    Arguments:  std::vector<std::pair<int,float>>::iterator iter - Iterator of current
+ *                location in the array. 
+ *                int length - Length of this segment.
+ *  Description:  Merges two bitonic sequences into a larger sequence.
  * =====================================================================================
  */
 
@@ -179,9 +180,10 @@ static void mergeUp(std::vector<std::pair<int,float>>::iterator iter, int length
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  cpu_bitonic_sort
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ *    Arguments:  std::vector<std::pair<int,float>> & distances - Distances vector.
+ *  Description:  Uses bitonic sorting network to progressively merge smaller bitonic
+ *                sequences into a larger sorted sequence. Uses normalised version of this
+ *                network.
  * =====================================================================================
  */
 
