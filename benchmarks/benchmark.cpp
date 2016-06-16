@@ -67,11 +67,15 @@ int main(int argc, char *argv[]) {
 	CPUSorts::BitonicSort bitonicSorter ;
 	CPUSorts::RadixSortPT radixSorterPT ;
 	CPUSorts::RadixSortHoff radixSorterHoff ;
+	CPUSorts::RadixSortHybrid radixSorterHybrid ;
+	GPUSorts::ThrustGPUSort thrustSorter ;
 	// Add sorts. //
 	sorts.push_back(&stlSorter) ;
 	sorts.push_back(&bitonicSorter) ;
 	sorts.push_back(&radixSorterPT) ;
 	sorts.push_back(&radixSorterHoff) ;
+	sorts.push_back(&radixSorterHybrid) ;
+	sorts.push_back(&thrustSorter) ;
 
 	// Read in file names. //
 	for (int i = 1 ; i < argc ; ++i) {

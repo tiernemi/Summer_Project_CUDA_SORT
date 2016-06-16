@@ -47,6 +47,16 @@ WVTEST_MAIN("Sorting tests")
 	CPUSorts::RadixSortHoff radixSorterHoff ;
 	radixSorterHoff.sortDistances(distances) ;
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
+
+	distances = unsortedDistances ;
+	CPUSorts::RadixSortHybrid radixSorterHybrid ;
+	radixSorterHybrid.sortDistances(distances) ;
+	WVPASSEQ(Tests::checkSorted(distances),1) ;
+
+	distances = unsortedDistances ;
+	GPUSorts::ThrustGPUSort thrustSorter ;
+	thrustSorter.sortDistances(distances) ;
+	WVPASSEQ(Tests::checkSorted(distances),1) ;
 }
 
 
