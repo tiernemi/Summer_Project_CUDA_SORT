@@ -18,6 +18,11 @@
  * =====================================================================================
  */
 
+#include "triangle.hpp"
+#include "camera.hpp"
+
+void cudaSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) ;
+void cudaSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras, std::vector<float> & times) ;
 void cudaSortDistances(std::vector<int> & ids, std::vector<float> & dists) ;
 void cudaSortDistances(std::vector<int> & ids, std::vector<float> & dists, float & sortTime) ;
 

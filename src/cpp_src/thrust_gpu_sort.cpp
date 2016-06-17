@@ -40,6 +40,10 @@ namespace GPUSorts {
  */
 
 void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera) {
+	std::vector<Camera> cameras(1) ;
+	cameras[0] = camera ;
+	cudaSortTriangles(triangles,cameras) ;
+	/* 
 	// Convert to sortable form //
 	std::vector<std::pair<int,float>> distances(triangles.size()) ;
 	std::vector<Triangle> temp = triangles ;
@@ -50,6 +54,7 @@ void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, Camera & ca
 		temp[k] = triangles[distances[k].first] ;
 	}
 	triangles = temp ;
+	*/
 }		/* -----  end of member function function  ----- */
 /* 
  * ===  MEMBER FUNCTION CLASS : ThrustGPUSort  ==============================================
@@ -85,6 +90,11 @@ void ThrustGPUSort::sortDistances(std::vector<std::pair<int,float>> & distances)
  */
 
 void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) {
+	std::vector<Camera> cameras(1) ;
+	cameras[0] = camera ;
+	sortTriangles(triangles,camera) ;
+	cudaSortTriangles(triangles,cameras) ;
+	/* 
 	// Convert to sortable form //
 	std::vector<std::pair<int,float>> distances(triangles.size()) ;
 	std::vector<Triangle> temp = triangles ;
@@ -94,7 +104,7 @@ void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, Camera & ca
 	for (unsigned int k = 0 ; k < distances.size() ; ++k) {
 		temp[k] = triangles[distances[k].first] ;
 	}
-	triangles = temp ;
+	triangles = temp ; */
 }		/* -----  end of member function function  ----- */
 
 /* 
@@ -131,9 +141,11 @@ void ThrustGPUSort::sortDistances(std::vector<std::pair<int,float>> & distances,
  */
 
 void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
+	cudaSortTriangles(triangles,cameras) ;
+	/* 
 	for (unsigned int i = 0 ; i < cameras.size() ; ++i) {
 		sortTriangles(triangles,cameras[i]) ;
-	}
+	} */
 }		/* -----  end of member function function  ----- */
 
 /* 
@@ -148,6 +160,8 @@ void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, std::vector
 
 void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras,
 		std::vector<float> & times) {
+	cudaSortTriangles(triangles,cameras) ;
+	/*  
 	std::vector<float> newTimes ;
 	for (unsigned int i = 0 ; i < cameras.size() ; ++i) {
 		float sortTime = 0 ;
@@ -155,6 +169,7 @@ void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, std::vector
 		newTimes.push_back(sortTime) ;
 	}
 	times = newTimes ;
+	*/
 }		/* -----  end of member function function  ----- */
 
 }
