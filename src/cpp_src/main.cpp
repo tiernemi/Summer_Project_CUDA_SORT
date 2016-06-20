@@ -28,8 +28,7 @@
 #include "../../inc/transforms.hpp"
 #include "../../inc/camera.hpp"
 #include "../../inc/test_funcs.hpp"
-#include "../../inc/sort.hpp"
-#include "../../inc/bitonic_sort.hpp"
+#include "../../inc/sort_algs.hpp"
 
 // Options //
 CFlag verbose("verbose",false,"v") ;
@@ -46,17 +45,14 @@ int main(int argc, char *argv[]) {
 
 	// Process Command Line Options //
 	CommandParser::processArgs(argc, argv, options) ;
-
-	// Read in the data //
 	std::vector<Triangle> triangles ;
 	std::vector<Camera> cameras ;
 	FileLoader::loadFile(triangles,cameras,filename.getValue()) ;
 
+	GPUSorts::ThrustGPUSort thrustSorter ;
+	thrustSorter.sortTriangles(triangles,cameras) ;
 	std::vector<std::pair<int,float>> distances(triangles.size()) ;
 	Transforms::transformToDistVec(distances,triangles,cameras[0]) ;
-	CPUSorts::BitonicSort bitonicSorter ;
-	bitonicSorter.sortDistances(distances) ;
-	std::cout <<  Tests::checkSorted(distances) << std::endl ;
 	return EXIT_SUCCESS ;
 }
 

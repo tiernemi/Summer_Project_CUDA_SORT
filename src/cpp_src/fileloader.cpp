@@ -89,11 +89,12 @@ void FileLoader::loadCameraPos(std::vector<Camera> & cameraPos, std::ifstream & 
 	cameraPos.resize(0) ;
 	std::vector<float> camBuffer(3) ;
 	std::string test ;
-	do {
+	while (input) {
 		input.ignore(1E3, '\t') ;
 		for (int i = 0 ; i < 3 ; ++i) {
 			input >> camBuffer[i] ;
 		}
 		cameraPos.push_back(Camera(camBuffer[0], camBuffer[1], camBuffer[2])) ;
-	} while (input);
+	}
+	cameraPos.erase(cameraPos.end()) ;
 }

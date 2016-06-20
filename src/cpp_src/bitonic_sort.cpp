@@ -32,28 +32,6 @@ static void bitonicBuildNorm(std::vector<std::pair<int,float>> & distances) ;
 
 /* 
  * ===  MEMBER FUNCTION CLASS : BitonicSort  ==============================================
- *         Name:  sortTriangles
- *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
- *                Camera & camera - Camera to sort relative to.
- *  Description:  Uses stl sort to sort triangles.
- * =====================================================================================
- */
-
-void BitonicSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera) {
-	// Convert to sortable form //
-	std::vector<std::pair<int,float>> distances(triangles.size()) ;
-	std::vector<Triangle> temp = triangles ;
-	Transforms::transformToDistVec(distances, temp, camera) ;
-	sortDistances(distances) ;
-	// Reorder triangles. //
-	for (unsigned int k = 0 ; k < distances.size() ; ++k) {
-		temp[k] = triangles[distances[k].first] ;
-	}
-	triangles = temp ;
-}		/* -----  end of member function function  ----- */
-
-/* 
- * ===  MEMBER FUNCTION CLASS : BitonicSort  ==============================================
  *         Name:  function
  *    Arguments:  std::vector<std::pair<int,float>> & distances - Vector of distances and
  *                ids.
@@ -63,30 +41,6 @@ void BitonicSort::sortTriangles(std::vector<Triangle> & triangles, Camera & came
 
 void BitonicSort::sortDistances(std::vector<std::pair<int,float>> & distances) {
 	bitonicBuildNorm(distances) ;
-}		/* -----  end of member function function  ----- */
-
-/* 
- * ===  MEMBER FUNCTION CLASS : BitonicSort  ==============================================
- *         Name:  sortTriangles
- *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
- *                Camera & camera - Camera to sort relative to.
- *                float & sortTime - Times taken to sort for each camera.
- *  Description:  Uses stl sort to sort triangles and times these sorts.
- * =====================================================================================
- */
-
-void BitonicSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) {
-	// Convert to sortable form //
-	std::vector<std::pair<int,float>> distances(triangles.size()) ;
-	std::vector<Triangle> temp = triangles ;
-	Transforms::transformToDistVec(distances, triangles, camera) ;
-	sortDistances(distances, sortTime) ;
-	// Reorder triangles. //
-	for (unsigned int k = 0 ; k < distances.size() ; ++k) {
-		temp[k] = triangles[distances[k].first] ;
-	}
-	triangles = temp ;
-	Transforms::transformToDistVec(distances, triangles, camera) ;
 }		/* -----  end of member function function  ----- */
 
 /* 
@@ -105,42 +59,6 @@ void BitonicSort::sortDistances(std::vector<std::pair<int,float>> & distances, f
 	bitonicBuildNorm(distances) ;
 	clock.stop() ;
 	sortTime = clock.getDuration() ;
-}		/* -----  end of member function function  ----- */
-
-/* 
- * ===  MEMBER FUNCTION CLASS : BitonicSort  ===========================================
- *         Name:  sortTriangles
- *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
- *                std::vector<Camera> & cameras - Vector of cameras.
- *  Description:  Uses bitonic sort to sort triangles based on vector of cameras.
- * =====================================================================================
- */
-
-void BitonicSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
-	for (unsigned int i = 0 ; i < cameras.size() ; ++i) {
-		sortTriangles(triangles,cameras[i]) ;
-	}
-}		/* -----  end of member function function  ----- */
-
-/* 
- * ===  MEMBER FUNCTION CLASS : BitonicSort  ===========================================
- *         Name:  sortTriangles
- *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
- *                std::vector<Camera> & cameras - Vector of cameras.
- *                std::vector<float> times - Vector of sort times for each camera.
- *  Description:  Uses bitonic sort to sort triangles based on vector of cameras.
- * =====================================================================================
- */
-
-void BitonicSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras,
-		std::vector<float> & times) {
-	std::vector<float> newTimes ;
-	for (unsigned int i = 0 ; i < cameras.size() ; ++i) {
-		float sortTime = 0 ;
-		sortTriangles(triangles,cameras[i],sortTime) ;
-		newTimes.push_back(sortTime) ;
-	}
-	times = newTimes ;
 }		/* -----  end of member function function  ----- */
 
 /* 

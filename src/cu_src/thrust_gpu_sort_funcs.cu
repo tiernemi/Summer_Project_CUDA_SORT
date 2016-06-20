@@ -25,6 +25,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/tuple.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/iterator/permutation_iterator.h>
 #include <thrust/sort.h>
 #include <thrust/execution_policy.h>
 #include <thrust/iterator/constant_iterator.h>
@@ -34,125 +35,200 @@
 #include "../../inc/thrust_gpu_sort_funcs.hpp"
 #include "../../inc/strided_iterators.hpp"
 
-typedef thrust::tuple<float,float,float> tuple3;
-typedef StridedRange<float*> strTuple3f ;
-typedef thrust::tuple<strTuple3f::iterator,strTuple3f::iterator,strTuple3f::iterator> iterTup3f ;
-typedef thrust::zip_iterator<iterTup3f> zipTuple3f  ;
-
+typedef thrust::tuple<float,float,float> Tuple3f;
+typedef thrust::device_vector<float>::iterator DevVecIteratorf ;
+typedef thrust::device_vector<int>::iterator DevVecIteratori ;
+typedef thrust::tuple<thrust::device_vector<float>::iterator,thrust::device_vector<float>::iterator,
+		thrust::device_vector<float>::iterator> TupleIt ;
+typedef thrust::zip_iterator<TupleIt> ZipIteratorTuple ;
 
 // This functor implements the dot product between 3d vectors
-struct calcDistance : public thrust::binary_function<tuple3,tuple3,float> {
+struct calcDistance : public thrust::binary_function<Tuple3f,Tuple3f,float> {
 	__host__ __device__
-	float operator()(const tuple3 & a, const tuple3 & b) const {
+	float operator()(const Tuple3f & a, const Tuple3f & b) const {
 		float diff1 = thrust::get<0>(a) - thrust::get<0>(b) ;
 		float diff2 = thrust::get<1>(a) - thrust::get<1>(b) ;
 		float diff3 = thrust::get<2>(a) - thrust::get<2>(b) ;
-		return sqrt(diff1 + diff2 + diff3) ;
+		return diff1*diff1 + diff2*diff2 + diff3*diff3 ;
 	}
 } ;
 
-void cudaSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
-
+void cudaThrustSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
 	// Pre process triangle co-ordinates. //
 	std::vector<float> triCo(3*triangles.size()) ;
 	std::vector<int> triIds(triangles.size()) ;
 	for (unsigned int i = 0 ; i < triangles.size() ; ++i) {
-		triIds[i] = triangles[i].getID() ;
+		triIds[i] = i ;
 		const float * coords = triangles[i].getCoords() ;
-		triCo[3*i] = coords[0] ;
-		triCo[3*i+1] = coords[1] ;
-		triCo[3*i+2] = coords[2] ;
+		triCo[i] = coords[0] ;
+		triCo[i+triangles.size()] = coords[1] ;
+		triCo[i+2*triangles.size()] = coords[2] ;
 	}
 
 	// Pre process camera co-ordinates. //
 	std::vector<float> camCo(3*cameras.size()) ;
 	for (unsigned int i = 0 ; i < cameras.size() ; ++i) {
 		const float * coords = cameras[i].getCoords() ;
-		camCo[3*i] = coords[0] ;
-		camCo[3*i+1] = coords[1] ;
-		camCo[3*i+2] = coords[2] ;
+		camCo[i] = coords[0] ;
+		camCo[i+cameras.size()] = coords[1] ;
+		camCo[i+2*cameras.size()] = coords[2] ;
 	}
 	
+	// Initialise device vectors. //`
 	thrust::device_vector<float> devTriCo(triCo.begin(),triCo.end()) ;
+	thrust::device_vector<float> devTriTemp(devTriCo.size()) ;
 	thrust::device_vector<int> devTriIds(triIds.begin(),triIds.end()) ;
 	thrust::device_vector<float> devCamCo(camCo.begin(),camCo.end()) ;
-	thrust::device_vector<float> devNewCo(triCo.size()/3) ;
+	thrust::device_vector<float> devDists(triCo.size()/3) ;
 
-	const int triStride = 3 ;
-	const int numTri = devTriCo.size()/3 ;
-	const int triSize = devTriCo.size() ;
+	// Number of triangles etc. //
+	const int numTriangles = devTriCo.size()/3 ;
+	const int numCameras = devCamCo.size()/3 ;
 
-	float * devTriPtr = thrust::raw_pointer_cast(devTriCo.data()) ;
-	StridedRange<float*> firstT =  StridedRange<float*>(devTriPtr,   devTriPtr + 6,   3);
-	StridedRange<float*> secondT = StridedRange<float*>(devTriPtr+1, devTriPtr + triSize+1-triStride+1, triStride);
-	StridedRange<float*> thirdT =  StridedRange<float*>(devTriPtr+2, devTriPtr + triSize+1-triStride+2, triStride);
-	zipTuple3f zipBeginItT = zip(firstT.begin(),secondT.begin(), thirdT.begin());
-	zipTuple3f zipEndItT = zip(firstT.end(), secondT.end(), thirdT.end());
+	// Get the pointers of the x, y, z data for the triangles. //
+	thrust::device_ptr<float> triXPtrBegin = devTriCo.data() ;
+	thrust::device_ptr<float> triYPtrBegin = devTriCo.data() + numTriangles ;
+	thrust::device_ptr<float> triZPtrBegin = devTriCo.data() + 2*numTriangles ;
+	thrust::device_ptr<float> triXPtrEnd = devTriCo.data() + numTriangles ;
+	thrust::device_ptr<float> triYPtrEnd = devTriCo.data() + 2*numTriangles ;
+	thrust::device_ptr<float> triZPtrEnd = devTriCo.data() + 3*numTriangles ;
 
-    // Finally, we pass the zip_iterators into transform() as if they
-    // were 'normal' iterators for a device_vector<Float3>.
-   // thrust::transform(A_first, A_last, thirdT.begin(), result.begin(), calcDistance());
+	// Get the pointers of the x, y, z data for the camera. //
+	thrust::device_ptr<float> camXPtrBegin = devCamCo.data() ;
+	thrust::device_ptr<float> camYPtrBegin = devCamCo.data() + numCameras ;
+	thrust::device_ptr<float> camZPtrBegin = devCamCo.data() + 2*numCameras ;
+	thrust::device_ptr<float> camXPtrEnd = devCamCo.data() + numCameras ;
+	thrust::device_ptr<float> camYPtrEnd = devCamCo.data() + 2*numCameras ;
+	thrust::device_ptr<float> camZPtrEnd = devCamCo.data() + 3*numCameras ;
 
-	//std::cout << *thrust::device_ptr<float>(&(thrust::get<0>(*zipBeginItT))) << std::endl ;
-	const int camStride = 3 ;
-	const int numCams = devCamCo.size()/3 ;
-	const int camSize = devCamCo.size() ;
-	float * devCamPtr = thrust::raw_pointer_cast(devCamCo.data()) ;
-	StridedRange<float*> firstC =  StridedRange<float*>(devCamPtr,   devCamPtr + camSize+1-camStride,  camStride);
-	StridedRange<float*> secondC = StridedRange<float*>(devCamPtr+1, devCamPtr + camSize+1-camStride+1, camStride);
-	StridedRange<float*> thirdC =  StridedRange<float*>(devCamPtr+2, devCamPtr + camSize+1-camStride+2, camStride);
-	zipTuple3f zipBeginItC = zip(firstC.begin(),secondC.begin(), thirdC.begin());
-	zipTuple3f zipEndItC = zip(firstC.end(), secondC.end(), thirdC.end());
+	// Zip the x...y...z vector into tuples of x,y,z //
+	ZipIteratorTuple zipTriBegin = zip(triXPtrBegin, triYPtrBegin, triZPtrBegin) ;
+	ZipIteratorTuple zipTriEnd = zip(triXPtrEnd, triYPtrEnd, triZPtrEnd);
+	ZipIteratorTuple zipCamBegin = zip(camXPtrBegin, camYPtrBegin, camZPtrBegin) ;
+	ZipIteratorTuple zipCamEnd = zip(camXPtrEnd, camYPtrEnd, camZPtrEnd);
 
-	for (int i = 0 ; i < numCams ; ++i) {
-		//thrust::constant_iterator<thrust::tuple<float,float,float> > camTuple = thrust::make_constant_iterator<thrust::tuple<float,float,float> >(*(zipBeginItT+i))  ;
-		//thrust::transform(zipBeginItT, zipEndItT, zipBeginItT, devNewCo.begin(), calcDistance());
+	// Get the device pointers for the device triangle ids and device distance vector. //
+	thrust::device_ptr<int> devKeyPtr = devTriIds.data();
+	thrust::device_ptr<float> devValPtr = devDists.data();
+
+	// For each camera get distance and sort ids. //
+	for (int i = 0 ; i < numCameras ; ++i) {
+		thrust::constant_iterator<Tuple3f> cam(*(zipCamBegin+i)) ;
+		thrust::permutation_iterator<ZipIteratorTuple,DevVecIteratori> permIter(zipTriBegin,devTriIds.begin()) ;
+		thrust::transform(thrust::device, permIter, permIter+numTriangles, cam, devDists.begin(), calcDistance());
+		thrust::sort_by_key(thrust::device, devValPtr,devValPtr+numTriangles,devKeyPtr) ;
 	}
-	//thrust::constant_iterator<zipTuple3f> camTuple(zipBeginItT) ;
-	//std::cout << *thrust::device_ptr<float>(&(thrust::get<0>(**camTuple))) << std::endl ;
 
+	// GPU copy back to CPU. //
+	thrust::copy(devTriIds.begin(),devTriIds.end(),triIds.begin()) ;
+
+	// CPU Overwrite triangles. //
+	std::vector<Triangle> temp = triangles ;
+	for (unsigned int i = 0 ; i < triangles.size() ; ++i) {
+		triangles[i] = temp[triIds[i]] ;
+	}
 }
 
-void cudaSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras, 
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  cudaThrustSortTriangles
+ *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles to sort.
+ *                std::vector<Camera> & cameras - Vector of cameras to sort relative to.
+ *		          std::vector<float> & times - Vector of times 
+ *
+ *      Returns:  
+ *  Description:  
+ * =====================================================================================
+ */
+
+void cudaThrustSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras, 
 		std::vector<float> & times) {
+	cudaEvent_t start, stop;
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+	std::vector<float> newTimes ;
 
+	// Pre process triangle co-ordinates. //
+	std::vector<float> triCo(3*triangles.size()) ;
+	std::vector<int> triIds(triangles.size()) ;
+	for (unsigned int i = 0 ; i < triangles.size() ; ++i) {
+		triIds[i] = i ;
+		const float * coords = triangles[i].getCoords() ;
+		triCo[i] = coords[0] ;
+		triCo[i+triangles.size()] = coords[1] ;
+		triCo[i+2*triangles.size()] = coords[2] ;
+	}
+
+	// Pre process camera co-ordinates. //
+	std::vector<float> camCo(3*cameras.size()) ;
+	for (unsigned int i = 0 ; i < cameras.size() ; ++i) {
+		const float * coords = cameras[i].getCoords() ;
+		camCo[i] = coords[0] ;
+		camCo[i+cameras.size()] = coords[1] ;
+		camCo[i+2*cameras.size()] = coords[2] ;
+	}
+	
+	// Initialise device vectors. //`
+	thrust::device_vector<float> devTriCo(triCo.begin(),triCo.end()) ;
+	thrust::device_vector<float> devTriTemp(devTriCo.size()) ;
+	thrust::device_vector<int> devTriIds(triIds.begin(),triIds.end()) ;
+	thrust::device_vector<float> devCamCo(camCo.begin(),camCo.end()) ;
+	thrust::device_vector<float> devDists(triCo.size()/3) ;
+
+	// Number of triangles etc. //
+	const int numTriangles = devTriCo.size()/3 ;
+	const int numCameras = devCamCo.size()/3 ;
+
+	// Get the pointers of the x, y, z data for the triangles. //
+	thrust::device_ptr<float> triXPtrBegin = devTriCo.data() ;
+	thrust::device_ptr<float> triYPtrBegin = devTriCo.data() + numTriangles ;
+	thrust::device_ptr<float> triZPtrBegin = devTriCo.data() + 2*numTriangles ;
+	thrust::device_ptr<float> triXPtrEnd = devTriCo.data() + numTriangles ;
+	thrust::device_ptr<float> triYPtrEnd = devTriCo.data() + 2*numTriangles ;
+	thrust::device_ptr<float> triZPtrEnd = devTriCo.data() + 3*numTriangles ;
+
+	// Get the pointers of the x, y, z data for the camera. //
+	thrust::device_ptr<float> camXPtrBegin = devCamCo.data() ;
+	thrust::device_ptr<float> camYPtrBegin = devCamCo.data() + numCameras ;
+	thrust::device_ptr<float> camZPtrBegin = devCamCo.data() + 2*numCameras ;
+	thrust::device_ptr<float> camXPtrEnd = devCamCo.data() + numCameras ;
+	thrust::device_ptr<float> camYPtrEnd = devCamCo.data() + 2*numCameras ;
+	thrust::device_ptr<float> camZPtrEnd = devCamCo.data() + 3*numCameras ;
+
+	// Zip the x...y...z vector into tuples of x,y,z //
+	ZipIteratorTuple zipTriBegin = zip(triXPtrBegin, triYPtrBegin, triZPtrBegin) ;
+	ZipIteratorTuple zipTriEnd = zip(triXPtrEnd, triYPtrEnd, triZPtrEnd);
+	ZipIteratorTuple zipCamBegin = zip(camXPtrBegin, camYPtrBegin, camZPtrBegin) ;
+	ZipIteratorTuple zipCamEnd = zip(camXPtrEnd, camYPtrEnd, camZPtrEnd);
+
+	// Get the device pointers for the device triangle ids and device distance vector. //
+	thrust::device_ptr<int> devKeyPtr = devTriIds.data();
+	thrust::device_ptr<float> devValPtr = devDists.data();
+
+	// For each camera get distance and sort ids. //
+	for (int i = 0 ; i < numCameras ; ++i) {
+		thrust::constant_iterator<Tuple3f> cam(*(zipCamBegin+i)) ;
+		thrust::permutation_iterator<ZipIteratorTuple,DevVecIteratori> permIter(zipTriBegin,devTriIds.begin()) ;
+		thrust::transform(thrust::device, permIter, permIter+numTriangles, cam, devDists.begin(), calcDistance());
+		cudaEventRecord(start, 0);
+		thrust::sort_by_key(thrust::device, devValPtr,devValPtr+numTriangles,devKeyPtr) ;
+		cudaEventRecord(stop, 0);
+		cudaEventSynchronize(stop);
+		float elapsedTime ;
+		cudaEventElapsedTime(&elapsedTime , start, stop) ;
+		newTimes.push_back(elapsedTime/1E3) ;
+	}
+
+	// GPU copy back to CPU. //
+	thrust::copy(devTriIds.begin(),devTriIds.end(),triIds.begin()) ;
+
+	// CPU Overwrite triangles. //
+	std::vector<Triangle> temp = triangles ;
+	for (unsigned int i = 0 ; i < triangles.size() ; ++i) {
+		triangles[i] = temp[triIds[i]] ;
+	}
+
+	times = newTimes ;
 }
-
-void cudaSortDistances(std::vector<int> & ids, std::vector<float> & dists) {
-	thrust::device_vector<int> devKeys(ids.begin(),ids.end()) ;
-	thrust::device_vector<float> devVals(dists.begin(),dists.end()) ;
-
-	thrust::device_ptr<int> devKeyPtr = devKeys.data();
-	thrust::device_ptr<float> devValPtr = devVals.data();
-
-	thrust::sort_by_key(devValPtr,devValPtr+devVals.size(),devKeyPtr) ;
-
-	thrust::copy(devVals.begin(),devVals.end(),dists.begin()) ;
-	thrust::copy(devKeys.begin(),devKeys.end(),ids.begin()) ;
-}
-
-void cudaSortDistances(std::vector<int> & ids, std::vector<float> & dists, float & sortTime) {
-	cudaEvent_t start ;
-	cudaEvent_t stop ;
-	cudaEventCreate(&start) ;
-	cudaEventCreate(&stop) ;
-	cudaEventRecord(start, 0) ;
-	thrust::device_vector<int> devKeys(ids.begin(),ids.end()) ;
-	thrust::device_vector<float> devVals(dists.begin(),dists.end()) ;
-
-	thrust::device_ptr<int> devKeyPtr = devKeys.data();
-	thrust::device_ptr<float> devValPtr = devVals.data();
-
-	thrust::sort_by_key(devValPtr,devValPtr+devVals.size(),devKeyPtr) ;
-
-	thrust::copy(devVals.begin(),devVals.end(),dists.begin()) ;
-	thrust::copy(devKeys.begin(),devKeys.end(),ids.begin()) ;
-
-	cudaEventRecord(stop, 0) ;
-	cudaEventSynchronize(stop) ;
-	float elapsedTime ; 
-	cudaEventElapsedTime(&elapsedTime , start, stop) ;
-	sortTime = elapsedTime*1E3 ;
-}
-
 

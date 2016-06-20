@@ -19,7 +19,7 @@
  */
 
 // Custom Headers //
-#include "sort.hpp"
+#include "cpu_sort.hpp"
 
 /* 
  * ===  CLASS  =========================================================================
@@ -30,16 +30,11 @@
 
 namespace CPUSorts {
 
-class STLSort : public Sort {
+class STLSort : public CpuSort {
  public:
-	STLSort() : Sort("Stl_Sort") { ; } ;
-	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera)  ;
+	STLSort() : CpuSort("Stl_Sort") { ; } ;
 	virtual void sortDistances(std::vector<std::pair<int,float>> & distances) ;
-	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) ;
 	virtual void sortDistances(std::vector<std::pair<int,float>> & distances, float & sortTime) ;
-	virtual void sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) ;
-	virtual void sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras ,
-			std::vector<float> & times) ;
 } ;		/* -----  end of class stl_sort  ----- */
 
 }

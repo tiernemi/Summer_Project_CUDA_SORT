@@ -44,7 +44,9 @@ bool checkSorted(std::vector<std::pair<int,DataType>> & list) {
 	DataType prev = (*list.begin()).second ;
 	for (auto i = list.begin()+1 ; i != list.end() ; ++i) {
 		if (prev > (*i).second) {
-			return false ;
+			if ((prev - (*i).second) > 1E-4 ) {
+				return false ;
+			}
 		}
 		prev = (*i).second ;
 	}
@@ -71,7 +73,6 @@ bool checkSorted(std::unordered_map<int,DataType> & list) {
 	}
 	return true ;
 }
-
 
 }
 

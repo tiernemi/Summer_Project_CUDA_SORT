@@ -20,27 +20,22 @@
  */
 
 // Custom Headers //
-#include "sort.hpp"
+#include "cpu_sort.hpp"
 
 /* 
  * ===  CLASS  =========================================================================
  *         Name:  BitonicSort
- *  Description:  Implementaion of bitonic sort. Uses generic sort interface.
+ *  Description:  Implementaion of bitonic sort. Uses generic pu_rt interface.
  * =====================================================================================
  */
 
 namespace CPUSorts {
 
-class BitonicSort : public Sort {
+class BitonicSort : public CpuSort {
  public:
-	BitonicSort() : Sort("Bitonic_Sort") { ; } ;
-	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera)  ;
+	BitonicSort() : CpuSort("Bitonic_Sort") { ; } ;
 	virtual void sortDistances(std::vector<std::pair<int,float>> & distances) ;
-	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) ;
 	virtual void sortDistances(std::vector<std::pair<int,float>> & distances, float & sortTime) ;
-	virtual void sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) ;
-	virtual void sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras ,
-			std::vector<float> & times) ;
 } ;		/* -----  end of class bitonic_sort  ----- */
 
 }

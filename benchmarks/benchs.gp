@@ -8,7 +8,7 @@ set xlabel "Camera ID"
 datFiles = system('ls bench_data/times*')
 namesFiles =  system("ls bench_data/times* | gawk 'match($0, /times([A-Z][a-z]*)_([A-Z][a-z]*)/, a) {print a[1]a[2]}' ")
 
-plot for [i=1:words(datFiles)] word(datFiles,i) using 3 lc i with linespoints title sprintf("%s", word(namesFiles,i))
+plot for [i=1:words(datFiles)] word(datFiles,i) using 3 lt i with linespoints title sprintf("%s", word(namesFiles,i))
 
 set terminal postscript enhanced color
 set output "./plots/sortMultCameraComparisonRateScr.eps"
@@ -22,7 +22,7 @@ set xrange [*:*]
 datFiles = system('ls bench_data/times*')
 namesFiles =  system("ls bench_data/times* | gawk 'match($0, /times([A-Z][a-z]*)_([A-Z][a-z]*)/, a) {print a[1]a[2]}' ")
 
-plot for [i=1:words(datFiles)] word(datFiles,i) using 4:3 lc i with points title sprintf("%s", word(namesFiles,i))
+plot for [i=1:words(datFiles)] word(datFiles,i) using 4:3 lt i with points title sprintf("%s", word(namesFiles,i))
 
 ## Select histogram data
 #set style data histogram
