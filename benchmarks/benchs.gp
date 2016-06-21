@@ -11,18 +11,50 @@ namesFiles =  system("ls bench_data/times* | gawk 'match($0, /times([A-Z][a-z]*)
 plot for [i=1:words(datFiles)] word(datFiles,i) using 3 lt i with linespoints title sprintf("%s", word(namesFiles,i))
 
 set terminal postscript enhanced color
-set output "./plots/sortMultCameraComparisonRateScr.eps"
-set title "Sort Rate Vs Camera ID For Multiple Algorithms"
+set output "./plots/sortRateScoreComparisonZ.eps"
+set title "Sort-Rate (M/s) Vs Sortedness (Region 0-0.007)"
 set ylabel "Sort-Rate (M/s)"
 #set xtics rotate out
 
-set xlabel "Camera ID"
+set xlabel "Sortedness"
+set yrange [*:*]
+set xrange [0:0.007]
+set logscale y
+datFiles = system('ls bench_data/sortedness*')
+namesFiles =  system("ls bench_data/sortedness* | gawk 'match($0, /sortedness([A-Z][a-z]*)_([A-Z][a-z]*)/, a) {print a[1]a[2]}' ")
+
+plot for [i=1:words(datFiles)] word(datFiles,i) using 4:3 lt i with linespoints title sprintf("%s", word(namesFiles,i))
+
+set terminal postscript enhanced color
+set output "./plots/sortRateScoreComparisonUnz.eps"
+set title "Sort-Rate (M/s) Vs Sortedness"
+set ylabel "Sort-Rate (M/s)"
+#set xtics rotate out
+
+set xlabel "Sortedness"
+set yrange [*:*]
+set xrange [0.0001:1]
+set logscale y
+datFiles = system('ls bench_data/sortedness*')
+namesFiles =  system("ls bench_data/sortedness* | gawk 'match($0, /sortedness([A-Z][a-z]*)_([A-Z][a-z]*)/, a) {print a[1]a[2]}' ")
+
+plot for [i=1:words(datFiles)] word(datFiles,i) using 4:3 lt i with linespoints title sprintf("%s", word(namesFiles,i))
+
+unset logscale y
+set terminal postscript enhanced color
+set output "./plots/sortSpeedUpCameraComparison.eps"
+set title "SpeedUp Of Algorithms Vs Camera ID"
+set ylabel "SpeedUp"
+#set xtics rotate out
+
 set yrange [*:*]
 set xrange [*:*]
-datFiles = system('ls bench_data/times*')
-namesFiles =  system("ls bench_data/times* | gawk 'match($0, /times([A-Z][a-z]*)_([A-Z][a-z]*)/, a) {print a[1]a[2]}' ")
+set xlabel "Camera ID"
+datFiles = system('ls bench_data/speedup*')
+namesFiles =  system("ls bench_data/speedup* | gawk 'match($0, /speedup([A-Z][a-z]*)_([A-Z][a-z]*)_([A-Z][a-z]*)_([A-Z][a-z]*)/, a) {print a[1]a[2]\ a[3]a[4]}' ")
 
-plot for [i=1:words(datFiles)] word(datFiles,i) using 4:3 lt i with points title sprintf("%s", word(namesFiles,i))
+plot for [i=1:words(datFiles)] word(datFiles,i) using 3 lt i with linespoints title sprintf("%s", word(namesFiles,i))
+
 
 ## Select histogram data
 #set style data histogram

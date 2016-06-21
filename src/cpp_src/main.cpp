@@ -37,6 +37,9 @@ CVariable<std::string> filename("filename","","f:") ;
 
 int main(int argc, char *argv[]) {
 
+	std::mt19937 gen ;
+	gen.seed(872712872412) ;
+
 	// Command Line Options //
 	std::vector<CommandLineOption*> options ;
 	options.push_back(&verbose) ;
@@ -49,10 +52,16 @@ int main(int argc, char *argv[]) {
 	std::vector<Camera> cameras ;
 	FileLoader::loadFile(triangles,cameras,filename.getValue()) ;
 
-	GPUSorts::ThrustGPUSort thrustSorter ;
-	thrustSorter.sortTriangles(triangles,cameras) ;
-	std::vector<std::pair<int,float>> distances(triangles.size()) ;
-	Transforms::transformToDistVec(distances,triangles,cameras[0]) ;
+	//GPUSorts::ThrustGPUSort thrustSorter ;
+//	thrustSorter.sortTriangles(triangles,cameras) ;
+//	std::vector<std::pair<int,float>> distances(triangles.size()) ;
+//	Transforms::transformToDistVec(distances,triangles,cameras[0]) ;
+
+	std::vector<Triangle> temp = triangles ;
+	Tests::makePercentSorted(triangles,cameras[0],1,gen) ;
+
+	std::cout << Tests::calcPercentSorted(triangles,cameras[0]) << std::endl ;
+
 	return EXIT_SUCCESS ;
 }
 

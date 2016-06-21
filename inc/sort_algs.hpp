@@ -25,5 +25,6 @@
 #include "radix_sort_hoff.hpp"
 #include "radix_sort_hybrid.hpp"
 #include "thrust_gpu_sort.hpp"
+#include "bubble_sort.hpp"
 
 #endif /* end of include guard:  */

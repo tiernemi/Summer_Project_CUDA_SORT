@@ -30,7 +30,7 @@
 # define VALGRIND_COUNT_LEAKS(a,b,c,d) (a=b=c=d=0)
 #endif
 
-#define MAX_TEST_TIME 40     // max seconds for a single test to run
+#define MAX_TEST_TIME 60     // max seconds for a single test to run
 #define MAX_TOTAL_TIME 120*60 // max seconds for the entire suite to run
 
 #define TEST_START_FORMAT "! %s:%-5d %-40s "

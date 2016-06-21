@@ -20,6 +20,7 @@
 #include <chrono>
 #include <map>
 #include <random>
+#include <algorithm>
 #include <iostream>
 
 // Custom Headers //
@@ -43,7 +44,7 @@ static unsigned long int merge(std::vector<std::pair<int,float>> & distances, st
  *                not sorted.
  *  Description:  Uses mergesort to count the number of inversions in dataset. This
  *                is normalised by NCr2 to generate a sorting score. 0 is highly sorted
- *                while 1 is sorted the other direction. 0.5 is random.
+ *                in ascending order while 1 is sorted the other direction. 0.5 is random.
  *                Uses algorithm from http://geeksforgeeks.org
  * =====================================================================================
  */
@@ -57,49 +58,136 @@ float calcPercentSorted(const std::vector<Triangle> & triangles, const Camera & 
 
 }		/* -----  end of function calcPercentSorted  ----- */
 
-
 /* 
  * ===  FUNCTION  ======================================================================
- *         Name:  makePercentSorted:w
- *
- *    Arguments:  
- *      Returns: RETURN TO THIS 
- *  Description:  
+ *         Name:  makePercentSorted
+ *    Arguments:  std::vector<Triangle> & triangles - Triangles which will be inversed
+ *                until the desired sort score is reached.
+ *                Camera & camera - Camera to be sorted relative to.
+ *                float score - Desired sort score 0 is sorted ascending, 0.5 is random and
+ *                1.0 is sorted descending.
+ *                std::mt19937 & gen - Mersenne twister RNG.
+ *  Description:  Chooses random pairs of indices and inverts them if the total number of
+ *                inversions in the array increases or decreases depending on the approach
+ *                regime. If the score is > 0.5 its more efficient to work from an inverted
+ *                array while if it's < 0.5 it's more efficient to start from a sorted
+ *                array. The algorithm is is stochastic in nature and thus only approximately
+ *                gives the desired sort score. This should "randomly sort" array.
  * =====================================================================================
  */
 
-void makePercentSorted(std::vector<Triangle> & triangles, Camera & camera, float percent, 
+void makePercentSorted(std::vector<Triangle> & triangles, Camera & camera, float score, 
 		std::mt19937 & gen) {
-
+	// Presort the distances. //
 	CPUSorts::STLSort stlsorter ;
 	stlsorter.sortTriangles(triangles,camera) ;
 	std::vector<std::pair<int,float>> sortedDistances(triangles.size()) ;
 	Transforms::transformToDistVec(sortedDistances,triangles,camera) ;
-	std::vector<int> unvistedIndices(sortedDistances.size()) ;
+	// Index selection distribution. //
+	std::uniform_int_distribution<int> indices(0,triangles.size()-1) ;
+	// This is the number of inverses required for a given score. //
+	unsigned long int targetNumIvers = score*((triangles.size())*(triangles.size()-1))/2 ;
+	unsigned long int numInvers = 0 ;
+	// If >0.5 approach from reverse sorted array. //
+	if (score > 0.5) {
+		std::reverse(sortedDistances.begin(), sortedDistances.end()) ;
+		numInvers = ((triangles.size())*(triangles.size()-1))/2 ;
+		while (numInvers > targetNumIvers) {
+			int indexCand1 = indices(gen) ;
+			int indexCand2 = indices(gen) ;
+			while (indexCand1 == indexCand2) {
+				indexCand2 = indices(gen) ;
+			}
+			int index1 = std::min(indexCand1,indexCand2) ;
+			int index2 = std::max(indexCand1,indexCand2) ;
 
-	int numInvers = 0 ;
-	int reqInvers = std::round(percent*(((sortedDistances.size()-1)*(sortedDistances.size()))/2)) ;
+			// Swapped values. //
+			float newLeftVal = sortedDistances[index2].second ;
+			float newRightVal = sortedDistances[index1].second ;
 
-	for (unsigned int i = 0 ; i < unvistedIndices.size() ; ++i) {
-		unvistedIndices[i] = i ;
-	}
-	std::cout << reqInvers << std::endl;
-	while (numInvers < reqInvers) {
-		std::uniform_int_distribution<int> indices(0,unvistedIndices.size()) ;
-		int index1 = indices(gen) ;
-		unvistedIndices.erase(unvistedIndices.begin()+index1) ;
-		indices = std::uniform_int_distribution<int>(0,unvistedIndices.size()) ;
-		int index2 = indices(gen) ;
-		unvistedIndices.erase(unvistedIndices.begin()+index2) ;
-		std::swap(sortedDistances[index1],sortedDistances[index2]) ;
-		++numInvers ;
-		std::cout << numInvers << std::endl;
+			// Calculate the change in the number of inverses. Left<-Right //
+			int deltaInver = 0 ;
+			int numGtTowardsLeft = 0 ;
+			int numLtTowardsLeft = 0 ;
+			for (int i = index2-1 ; i > index1 ; --i) {
+				if (newRightVal < sortedDistances[i].second) {
+					++numGtTowardsLeft ;
+				}
+			}
+			if (newRightVal < newLeftVal) {
+				++numGtTowardsLeft ;
+			}
+			numLtTowardsLeft = (index2 - index1) - numGtTowardsLeft ;
+			
+			// Calculate the change in the number of inverses. Left->Right //
+			int numGtTowardsRight = 0 ;
+			int numLtTowardsRight = 0 ;
+			for (int i = index1+1 ; i < index2 ; ++i) {
+				if (newLeftVal < sortedDistances[i].second) {
+					++numGtTowardsRight ;
+				}
+			}
+			numLtTowardsRight = (index2 - index1) - numGtTowardsRight ;
+
+			deltaInver = numGtTowardsLeft - numLtTowardsLeft + numLtTowardsRight - numGtTowardsRight ;
+			// Only accept decreasing swaps. //
+			if (deltaInver < 0) {
+				numInvers += deltaInver ;
+				std::swap(sortedDistances[index1],sortedDistances[index2]) ;
+			}
+		}
+	} else {
+		while (numInvers < targetNumIvers) {
+			int indexCand1 = indices(gen) ;
+			int indexCand2 = indices(gen) ;
+			while (indexCand1 == indexCand2) {
+				indexCand2 = indices(gen) ;
+			}
+			int index1 = std::min(indexCand1,indexCand2) ;
+			int index2 = std::max(indexCand1,indexCand2) ;
+			// Swapped values. //
+			float newLeftVal = sortedDistances[index2].second ;
+			float newRightVal = sortedDistances[index1].second ;
+
+			int deltaInver = 0 ;
+			int numGtTowardsLeft = 0 ;
+			int numLtTowardsLeft = 0 ;
+			// Calculate the change in the number of inverses. Left<-Right //
+			for (int i = index2-1 ; i > index1 ; --i) {
+				if (newRightVal < sortedDistances[i].second) {
+					++numGtTowardsLeft ;
+				}
+			}
+			if (newRightVal < newLeftVal) {
+				++numGtTowardsLeft ;
+			}
+			numLtTowardsLeft = (index2 - index1) - numGtTowardsLeft ;
+			
+			// Calculate the change in the number of inverses. Left->Right //
+			int numGtTowardsRight = 0 ;
+			int numLtTowardsRight = 0 ;
+			for (int i = index1+1 ; i < index2 ; ++i) {
+				if (newLeftVal < sortedDistances[i].second) {
+					++numGtTowardsRight ;
+				}
+			}
+			numLtTowardsRight = (index2 - index1) - numGtTowardsRight ;
+
+			deltaInver = numGtTowardsLeft - numLtTowardsLeft + numLtTowardsRight - numGtTowardsRight ;
+			// Only accept increasing swaps. //
+			if (deltaInver > 0) {
+				numInvers += deltaInver ;
+				std::swap(sortedDistances[index1],sortedDistances[index2]) ;
+			}
+		}
 	}
 
 	std::vector<Triangle> temp = triangles ;
 	for (unsigned int i = 0 ; i < triangles.size() ; ++i) {
 		temp[i] = triangles[sortedDistances[i].first] ;
 	}
+
+	triangles = temp ;
 }		/* -----  end of function makePercentSorted  ----- */
 
 /* 
