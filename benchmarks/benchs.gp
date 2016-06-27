@@ -53,7 +53,7 @@ set xlabel "Camera ID"
 datFiles = system('ls bench_data/speedup*')
 namesFiles =  system("ls bench_data/speedup* | gawk 'match($0, /speedup([A-Z][a-z]*)_([A-Z][a-z]*)_([A-Z][a-z]*)_([A-Z][a-z]*)/, a) {print a[1]a[2]\ a[3]a[4]}' ")
 
-plot for [i=1:words(datFiles)] word(datFiles,i) using 3 lt i with linespoints title sprintf("%s", word(namesFiles,i))
+plot for [i=1:words(datFiles)] word(datFiles,i) using 4 lt i with linespoints title sprintf("%s", word(namesFiles,i))
 
 
 ## Select histogram data

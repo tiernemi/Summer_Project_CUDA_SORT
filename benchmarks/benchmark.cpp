@@ -78,17 +78,16 @@ int main(int argc, char *argv[]) {
 	CPUSorts::RadixSortPT radixSorterPT ;
 	CPUSorts::RadixSortHoff radixSorterHoff ;
 	CPUSorts::RadixSortHybrid radixSorterHybrid ;
-	//CPUSorts::BubbleSort bubbleSorter ;
+	CPUSorts::BubbleSort bubbleSorter ;
 	GPUSorts::ThrustGPUSort thrustSorter ;
 	// Add sorts. //
 	sorts.push_back(&stlSorter) ;
-	sorts.push_back(&stlSorter) ;
-	sorts.push_back(&bitonicSorter) ;
+	//sorts.push_back(&bubbleSorter) ;
+	//sorts.push_back(&bitonicSorter) ;
 	sorts.push_back(&radixSorterPT) ;
 	sorts.push_back(&radixSorterHoff) ;
 	sorts.push_back(&radixSorterHybrid) ;
 	sorts.push_back(&thrustSorter) ;
-	//sorts.push_back(&bubbleSorter) ;
 
 	// Read in file names. //
 	for (int i = 1 ; i < argc ; ++i) {
@@ -107,15 +106,16 @@ int main(int argc, char *argv[]) {
 		// Run CPU sorts for this data set. //
 		runCPUBenchs(sorts,triangles,cameras,sortTimes[i],percentSorts[i]) ;
 		// Measure performance of sorting algorithms Vs sortedness of array. //
-		runSortednessBenchs(sorts,triangles,cameras[0],sortednessTimes[i],sortedness[i],gen) ;
+//		runSortednessBenchs(sorts,triangles,cameras[0],sortednessTimes[i],sortedness[i],gen) ;
 	}
 
 	// Output time data. //
 	outputTimeResults(sortTimes, sorts, numElements, filenames,percentSorts) ;
 	// Output sortedness data. //
-	outputSortednessResults(sortednessTimes, sorts, numElements, filenames, sortedness) ;
+//	outputSortednessResults(sortednessTimes, sorts, numElements, filenames, sortedness) ;
 	// SpeedUp data. //
-	outputSpeedUpResults(sortTimes, sorts, 6, 3, numElements, filenames, percentSorts) ;
+	outputSpeedUpResults(sortTimes, sorts, 4, 0, numElements, filenames, percentSorts) ;
+	outputSpeedUpResults(sortTimes, sorts, 4, 1, numElements, filenames, percentSorts) ;
 
 	return EXIT_SUCCESS ;
 }
@@ -287,9 +287,9 @@ void outputSpeedUpResults(std::vector<std::vector<std::vector<float>>> & times, 
 			+ sorts[id2]->getAlgName() + std::to_string(numElements[i]) + basename(base) ;
 		std::ofstream output(datFileName) ;
 		for (unsigned int k = 0 ; k < times[i][id1].size() ; ++k) {
-			float speedUp = times[i][id1][k]/times[i][id2][k] ;
+			float speedUp = times[i][id2][k]/times[i][id1][k] ;
 			output << numElements[i] << " " << times[i][id1][k] << " " << times[i][id2][k]
-			<< " " << percentSorts[i][id1][k] << std::endl ;
+			<< " " << " " << speedUp <<  percentSorts[i][id1][k] << std::endl ;
 		}
 		output.close() ;
 	}

@@ -24,9 +24,9 @@
 #include <iostream>
 
 // Custom Headers //
-#include "../../inc/test_funcs.hpp"
-#include "../../inc/stl_sort.hpp"
-#include "../../inc/transforms.hpp"
+#include "../../inc/cpp_inc/test_funcs.hpp"
+#include "../../inc/cpp_inc/stl_sort.hpp"
+#include "../../inc/cpp_inc/transforms.hpp"
 
 namespace Tests {
 

@@ -22,10 +22,10 @@
 #include <stdlib.h>
 
 // Custom Headers //
-#include "../../inc/radix_sort_hoff.hpp"
-#include "../../inc/transforms.hpp"
-#include "../../inc/clock.hpp"
-#include "../../inc/test_funcs.hpp"
+#include "../../inc/cpp_inc/radix_sort_hoff.hpp"
+#include "../../inc/cpp_inc/transforms.hpp"
+#include "../../inc/cpp_inc/clock.hpp"
+#include "../../inc/cpp_inc/test_funcs.hpp"
 
 typedef const char *cpointer;
 

@@ -16,7 +16,7 @@
  */
 
 // Custom Headers //
-#include "../../inc/clock.hpp"
+#include "../../inc/cpp_inc/clock.hpp"
 
 /* 
  * ===  MEMBER FUNCTION : CLOCK  =======================================================

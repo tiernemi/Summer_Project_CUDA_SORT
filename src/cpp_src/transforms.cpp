@@ -23,9 +23,9 @@
 #include <unordered_map>
 
 // Custom Headers //
-#include "../../inc/triangle.hpp"
-#include "../../inc/camera.hpp"
-#include "../../inc/transforms.hpp"
+#include "../../inc/cpp_inc/triangle.hpp"
+#include "../../inc/cpp_inc/camera.hpp"
+#include "../../inc/cpp_inc/transforms.hpp"
 
 namespace Transforms {
 

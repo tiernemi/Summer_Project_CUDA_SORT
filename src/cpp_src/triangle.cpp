@@ -15,8 +15,8 @@
  * =====================================================================================
  */
 
-#include "../../inc/triangle.hpp"
-#include "../../inc/camera.hpp"
+#include "../../inc/cpp_inc/triangle.hpp"
+#include "../../inc/cpp_inc/camera.hpp"
 
 /* 
  * ===  MEMBER FUNCTION CLASS : Triangle  ======================================

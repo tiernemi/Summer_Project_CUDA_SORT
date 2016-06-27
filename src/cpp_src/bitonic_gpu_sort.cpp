@@ -22,11 +22,11 @@
 #include <stdlib.h>
 
 // Custom Headers //
-#include "../../inc/bitonic_gpu_sort.hpp"
-#include "../../inc/bitonic_gpu_sort_funcs.hpp" // CUDA code
-#include "../../inc/transforms.hpp"
-#include "../../inc/clock.hpp"
-#include "../../inc/test_funcs.hpp"
+#include "../../inc/cpp_inc/bitonic_gpu_sort.hpp"
+#include "../../inc/cpp_inc/bitonic_gpu_sort_funcs.hpp" // CUDA code
+#include "../../inc/cpp_inc/transforms.hpp"
+#include "../../inc/cpp_inc/clock.hpp"
+#include "../../inc/cpp_inc/test_funcs.hpp"
 
 namespace GPUSorts {
 

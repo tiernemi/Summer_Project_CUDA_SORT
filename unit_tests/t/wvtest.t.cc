@@ -41,11 +41,13 @@ WVTEST_MAIN("Sorting tests")
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
 
+	/* 
 	CPUSorts::BubbleSort bubbleSorter ;
 	bubbleSorter.sortTriangles(triangles,cameras) ;
 	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
+	*/
 
 	CPUSorts::RadixSortPT radixSorterPT ;
 	radixSorterPT.sortTriangles(triangles,cameras) ;
@@ -66,11 +68,17 @@ WVTEST_MAIN("Sorting tests")
 	triangles = temp ;
 
 	GPUSorts::ThrustGPUSort thrustSorter ;
-	Transforms::transformToDistVec(distances,triangles,cameras[0]) ;
 	thrustSorter.sortTriangles(triangles,cameras) ;
 	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
+
+	GPUSorts::RadixGPUSort radixGPUSorter ;
+	radixGPUSorter.sortTriangles(triangles,cameras) ;
+	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
+	WVPASSEQ(Tests::checkSorted(distances),1) ;
+	triangles = temp ;
+
 }
 
 

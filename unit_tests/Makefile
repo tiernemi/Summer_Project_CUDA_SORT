@@ -13,7 +13,8 @@ INCPATH		= /usr/include/
 BIN = ../bin/
 CXXSRCDIR = ../src/cpp_src/
 CUSRCDIR = ../src/cu_src/
-INCDIR = ../inc/
+CPPINCDIR = ./inc/cpp_inc/
+CUINCDIR = ./inc/cu_inc/
 
 ####### Files
 CXXFILES= $(shell ls $(CXXSRCDIR)*.cpp | xargs -n1 basename)

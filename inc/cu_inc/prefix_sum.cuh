@@ -1,12 +1,13 @@
-#ifndef RADIX_SORT_HPP_WTWS6ZYK
-#define RADIX_SORT_HPP_WTWS6ZYK
+
+#ifndef PREFIX_SUM_CU_T02OEQEL
+#define PREFIX_SUM_CU_T02OEQEL
 
 /*
  * =====================================================================================
  *
- *       Filename:  radix_sort.hpp
+ *       Filename:  prefix_sum.cuh
  *
- *    Description:  Header file for linking cuda radix sort with cpu code.
+ *    Description:  Header file for prefix sum function used in radix sort.
  *
  *        Version:  1.0
  *        Created:  07/06/16 17:22:08
@@ -18,8 +19,6 @@
  * =====================================================================================
  */
 
-#include <unordered_map>
+__global__ void prefixSum(int * indices, int * globalValues, int size, int mask) ;
 
-void cudaRadixSort(std::unordered_map<int,float> & data) ;
-
-#endif /* end of include guard: RADIX_SORT_HPP_WTWS6ZYK */
+#endif /* end of header gaurd PREFIX_SUM_CU_T02OEQEL */

@@ -20,15 +20,15 @@
 #include <unordered_map>
 
 // Custom headers. //
-#include "../../inc/test_funcs.hpp"
-#include "../../inc/fileloader.hpp"
-#include "../../inc/cmd_parser.hpp"
-#include "../../inc/c_variable.hpp"
-#include "../../inc/c_flag.hpp"
-#include "../../inc/transforms.hpp"
-#include "../../inc/camera.hpp"
-#include "../../inc/test_funcs.hpp"
-#include "../../inc/sort_algs.hpp"
+#include "../../inc/cpp_inc/test_funcs.hpp"
+#include "../../inc/cpp_inc/fileloader.hpp"
+#include "../../inc/cpp_inc/cmd_parser.hpp"
+#include "../../inc/cpp_inc/c_variable.hpp"
+#include "../../inc/cpp_inc/c_flag.hpp"
+#include "../../inc/cpp_inc/transforms.hpp"
+#include "../../inc/cpp_inc/camera.hpp"
+#include "../../inc/cpp_inc/test_funcs.hpp"
+#include "../../inc/cpp_inc/sort_algs.hpp"
 
 // Options //
 CFlag verbose("verbose",false,"v") ;

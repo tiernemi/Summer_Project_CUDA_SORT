@@ -20,8 +20,8 @@
 #include <sstream>
 
 // Custom Headers //
-#include "../../inc/fileloader.hpp"
-#include "../../inc/triangle.hpp"
+#include "../../inc/cpp_inc/fileloader.hpp"
+#include "../../inc/cpp_inc/triangle.hpp"
 
 /* 
  * ===  MEMBER FUNCTION CLASS : FileLoader  ===========================================

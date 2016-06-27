@@ -15,7 +15,8 @@ INCPATH		= /usr/include/
 BIN = ./bin/
 CXXSRCDIR = ./src/cpp_src/
 CUSRCDIR = ./src/cu_src/
-INCDIR = ./inc/
+CPPINCDIR = ./inc/cpp_inc/
+CUINCDIR = ./inc/cu_inc/
 
 ####### Files
 CXXFILES= $(shell ls $(CXXSRCDIR)*.cpp | xargs -n1 basename)
@@ -23,14 +24,19 @@ CUFILES= $(shell ls $(CUSRCDIR)*.cu | xargs -n1 basename)
 CXXOBJS= $(CXXFILES:cpp=o)
 CUOBJS= $(CUFILES:cu=o)
 
-INC= $(shell ls $(INCDIR)*.hpp | xargs -n1 basename)
+CPPINC= $(shell ls $(CPPINCDIR)*.hpp | xargs -n1 basename)
+CUINC= $(shell ls $(CUINCDIR)*.hpp | xargs -n1 basename)
 
 SOURCES=$(SRC)
+
 CXXOBJECTS=$(addprefix $(BIN), $(CXXOBJS))
 CUOBJECTS=$(addprefix $(BIN), $(CUOBJS))
 OBJECTS= $(CXXOBJECTS) 
 OBJECTS+= $(CUOBJECTS)
-HEADERS=$(addprefix $(INCDIR), $(INC))
+
+CPPHEADERS=$(addprefix $(CPPINCDIR), $(CPPINC))
+CUHEADERS=$(addprefix $(CUINCDIR), $(CUINC))
+
 CXXSRC= $(addprefix $(CXXSRCDIR), $CXXFILES)
 CUSRC= $(addprefix $(CUSRCDIR), $CUFILES)
 TARGET= sort
@@ -41,12 +47,12 @@ all: $(BIN) $(OBJECTS)
 
 .SECONDEXPANSION:
 $(CXXOBJECTS): %.o: $$(addprefix $(CXXSRCDIR), $$(notdir %)).cpp $(HEADERS)
-	$(CXX) -c $< $(CXXFLAGS) -I$(INCPATH) -o $@
+	$(CXX) -c $< $(CXXFLAGS) -I$(INCPATH) -I$(CPPINCDIR) -o $@ 
 
 #easeperate compilation
 .SECONDEXPANSION:
 $(CUOBJECTS): %.o: $$(addprefix $(CUSRCDIR), $$(notdir %)).cu $(HEADERS)
-	$(NVCC) -c $< $(NVCCFLAGS) -I$(INCPATH) -o $@ 
+	$(NVCC) -c $< $(NVCCFLAGS) -I$(INCPATH) -I$(CUINCDIR) -I$(CPPINCDIR) -o $@ 
 
 $(BIN):
 	mkdir $(BIN)

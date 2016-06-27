@@ -15,8 +15,8 @@
  * =====================================================================================
  */
 
-#include "../../inc/cpu_sort.hpp"
-#include "../../inc/transforms.hpp"
+#include "../../inc/cpp_inc/cpu_sort.hpp"
+#include "../../inc/cpp_inc/transforms.hpp"
 
 namespace CPUSorts {
 

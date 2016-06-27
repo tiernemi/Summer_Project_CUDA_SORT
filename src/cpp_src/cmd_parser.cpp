@@ -21,8 +21,8 @@
 #include "getopt.h"
 
 // Custom Headers //
-#include "../../inc/cmd_parser.hpp"
-#include "../../inc/cmd_line_option.hpp"
+#include "../../inc/cpp_inc/cmd_parser.hpp"
+#include "../../inc/cpp_inc/cmd_line_option.hpp"
 
 /* 
  * ===  MEMBER FUNCTION CLASS : CommandParser  ======================================

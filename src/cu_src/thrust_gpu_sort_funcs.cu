@@ -32,8 +32,8 @@
 #include <thrust/extrema.h>
 
 // Custom Headers //
-#include "../../inc/thrust_gpu_sort_funcs.hpp"
-#include "../../inc/strided_iterators.hpp"
+#include "../../inc/cpp_inc/thrust_gpu_sort_funcs.hpp"
+#include "../../inc/cpp_inc/strided_iterators.hpp"
 
 typedef thrust::tuple<float,float,float> Tuple3f;
 typedef thrust::device_vector<float>::iterator DevVecIteratorf ;

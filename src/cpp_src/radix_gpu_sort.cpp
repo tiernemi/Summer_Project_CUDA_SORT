@@ -1,12 +1,12 @@
 /*
  * =====================================================================================
  *
- *       Filename:  radix_sort_hoff.cpp
+ *       Filename:  radix_gpu_sort.cpp
  *
- *    Description:  Implementaion of radix sort on cpu.
+ *    Description:  Implementaion of radix sort on gpu.
  *
  *        Version:  1.0
- *        Created:  2016-06-15 12:42
+ *        Created:  2016-06-27 11:15
  *       Revision:  none
  *       Compiler:  g++
  *
@@ -17,21 +17,16 @@
 
 #include <vector>
 #include <iostream>
-#include <tuple>
-#include <string.h>
 #include <stdlib.h>
 
 // Custom Headers //
-#include "../../inc/cpp_inc/thrust_gpu_sort.hpp"
-#include "../../inc/cpp_inc/thrust_gpu_sort_funcs.hpp"
-#include "../../inc/cpp_inc/transforms.hpp"
-#include "../../inc/cpp_inc/clock.hpp"
-#include "../../inc/cpp_inc/test_funcs.hpp"
+#include "../../inc/cpp_inc/radix_gpu_sort.hpp"
+#include "../../inc/cpp_inc/radix_gpu_sort_funcs.hpp"
 
 namespace GPUSorts {
 
 /* 
- * ===  MEMBER FUNCTION CLASS : ThrustGPUSort  ==============================================
+ * ===  MEMBER FUNCTION CLASS : RadixGPUSort  ==============================================
  *         Name:  sortTriangles
  *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
  *                Camera & camera - Camera to sort relative to.
@@ -39,14 +34,14 @@ namespace GPUSorts {
  * =====================================================================================
  */
 
-void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera) {
+void RadixGPUSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera) {
 	std::vector<Camera> cameras(1) ;
 	cameras[0] = camera ;
-	cudaThrustSortTriangles(triangles,cameras) ;
+	cudaRadixSortTriangles(triangles,cameras) ;
 }		/* -----  end of member function function  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : ThrustGPUSort  ==============================================
+ * ===  MEMBER FUNCTION CLASS : RadixGPUSort  ==============================================
  *         Name:  sortTriangles
  *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
  *                Camera & camera - Camera to sort relative to.
@@ -55,17 +50,16 @@ void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, Camera & ca
  * =====================================================================================
  */
 
-void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) {
+void RadixGPUSort::sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) {
 	std::vector<Camera> cameras(1) ;
 	std::vector<float> times(1) ;
 	cameras[0] = camera ;
-	sortTriangles(triangles,camera) ;
-	cudaThrustSortTriangles(triangles,cameras,times) ;
+	cudaRadixSortTriangles(triangles,cameras,times) ;
 	sortTime = times[0] ;
 }		/* -----  end of member function function  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : ThrustGPUSort  ===========================================
+ * ===  MEMBER FUNCTION CLASS : RadixGPUSort  ===========================================
  *         Name:  sortTriangles
  *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
  *                std::vector<Camera> & cameras - Vector of cameras.
@@ -73,13 +67,12 @@ void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, Camera & ca
  * =====================================================================================
  */
 
-void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
-	cudaThrustSortTriangles(triangles,cameras) ;
-	std::vector<std::pair<int,float>> distances(triangles.size()) ;
+void RadixGPUSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
+	cudaRadixSortTriangles(triangles,cameras) ;
 }		/* -----  end of member function function  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : ThrustGPUSort  ===========================================
+ * ===  MEMBER FUNCTION CLASS : RadixGPUSort  ===========================================
  *         Name:  sortTriangles
  *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
  *                std::vector<Camera> & cameras - Vector of cameras.
@@ -88,9 +81,9 @@ void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, std::vector
  * =====================================================================================
  */
 
-void ThrustGPUSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras,
+void RadixGPUSort::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras,
 		std::vector<float> & times) {
-	cudaThrustSortTriangles(triangles,cameras,times) ;
+	cudaRadixSortTriangles(triangles,cameras,times) ;
 }		/* -----  end of member function function  ----- */
 
 }
