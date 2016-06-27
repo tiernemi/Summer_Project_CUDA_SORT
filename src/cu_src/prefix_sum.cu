@@ -45,9 +45,11 @@ __global__ void prefixSum(int * indices, int * globalValues, int numTriangles, i
 		count[RADIXSIZE*threadID+i] = 0 ;
 	}
 
+	// Prefix sum. //
+	int digit =  0 ;
 	if (globalID < numTriangles) {
 		blockValues[threadID] = globalValues[globalID] ;
-		int digit = (blockValues[threadID] & mask) ;
+		digit = (blockValues[threadID] & mask) ;
 		count[RADIXSIZE*threadID+digit] = 1 ;
 	} else {
 		blockValues[threadID] = 0 ;
@@ -111,7 +113,29 @@ __global__ void prefixSum(int * indices, int * globalValues, int numTriangles, i
 
 	if (threadID==0) {
 		for (int i = 0 ; i < blockDim.x ; ++i) {
-			printf("%d : %d\n", i, count[RADIXSIZE*i]);
+			printf("%d : %d\n", i, count[RADIXSIZE*i]) ;
+		}
+	}
+
+	__syncthreads() ;
+
+	// Offset counts such that radix val 01 is offset by the max val of count 00. //
+	for (int i = 1 ; i < RADIXSIZE ; ++i) {
+		count[RADIXSIZE*threadID+i] += count[RADIXSIZE*(blockDim.x-1)+(i-1)] ;
+	}
+
+	__syncthreads() ;
+
+	if (globalID < numTriangles) {
+		// Shuffle. //
+		int temp = blockValues[threadID] ;
+		__syncthreads() ;
+		blockValues[count[RADIXSIZE*threadID+digit]] = temp ;
+
+		if (threadID==0) {
+			for (int i = 0 ; i < blockDim.x ; ++i) {
+				printf("%d : %d\n", i, blockValues[i]&mask) ;
+			}
 		}
 	}
 
