@@ -2,14 +2,14 @@
 #include <iostream>
 
 #include "../wvtest.h"
-#include "../../inc/test_funcs.hpp"
-#include "../../inc/fileloader.hpp"
-#include "../../inc/cmd_parser.hpp"
-#include "../../inc/c_variable.hpp"
-#include "../../inc/c_flag.hpp"
-#include "../../inc/transforms.hpp"
-#include "../../inc/camera.hpp"
-#include "../../inc/sort_algs.hpp"
+#include "../../inc/cpp_inc/test_funcs.hpp"
+#include "../../inc/cpp_inc/fileloader.hpp"
+#include "../../inc/cpp_inc/cmd_parser.hpp"
+#include "../../inc/cpp_inc/c_variable.hpp"
+#include "../../inc/cpp_inc/c_flag.hpp"
+#include "../../inc/cpp_inc/transforms.hpp"
+#include "../../inc/cpp_inc/camera.hpp"
+#include "../../inc/cpp_inc/sort_algs.hpp"
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -22,7 +22,7 @@ WVTEST_MAIN("Sorting tests")
 {
 	std::vector<Triangle> triangles ;
 	std::vector<Camera> cameras ;
-	std::string filename("/home/users/mschpc/2015/tiernemi/project/data/testDataP2.txt") ;
+	std::string filename("/home/users/mschpc/2015/tiernemi/project/data/smallData.txt") ;
 	FileLoader::loadFile(triangles,cameras,filename) ;
 
 	std::vector<std::pair<int,float>> distances(triangles.size()) ;

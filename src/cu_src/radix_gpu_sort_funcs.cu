@@ -108,10 +108,10 @@ void cudaRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Camer
 	dim3 distanceBlock(WARPSIZE) ;
 	dim3 distanceGrid(numTriangles/distanceBlock.x + (!(numTriangles%distanceBlock.x)?0:1)) ;
 
-	printf("%d %d\n", distanceGrid.x, distanceBlock.x);
+	const int memRequired = distanceBlock.x*sizeof(int)*5 ;
 	for (int i = 0 ; i < numCameras ; ++i) {
 		cudaCalcDistanceSq<<<distanceGrid,distanceBlock>>>(gpuTriCo, gpuCamCo+i, gpuDistancesSq, numTriangles, numCameras) ;
-		prefixSum<<<distanceGrid,distanceBlock>>>(gpuTriIds,(int*)gpuDistancesSq, numTriangles, 3) ;
+		prefixSum<<<distanceGrid,distanceBlock, memRequired>>>(gpuTriIds,(int*)gpuDistancesSq, numTriangles, 3) ;
 		gpuErrchk(cudaPeekAtLastError()) ;
 		gpuErrchk(cudaDeviceSynchronize()) ;
 	}
