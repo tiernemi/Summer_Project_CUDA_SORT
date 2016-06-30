@@ -24,6 +24,7 @@
 #include "radix_sort_hoff.hpp"
 #include "radix_sort_hybrid.hpp"
 #include "radix_gpu_sort.hpp"
+#include "cub_radix_gpu_sort.hpp"
 #include "thrust_gpu_sort.hpp"
 #include "bubble_sort.hpp"
 

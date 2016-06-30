@@ -18,8 +18,7 @@
 #include <vector>
 
 // Custom Headers //
-#include "../../inc/bitonic_gpu_sort_funcs.hpp"
-#include "../../inc/transforms.hpp"
+#include "../../inc/cpp_inc/bitonic_gpu_sort_funcs.hpp"
 
 int WARP_SIZE = 32 ;
 int BLOCK_SIZE_MULT = 32 ;

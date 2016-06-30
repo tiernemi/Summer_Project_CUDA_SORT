@@ -30,11 +30,13 @@
  * =====================================================================================
  */
 
-__global__ void prefixSum(int * indices, int * globalValues, int numTriangles, int mask) {
+__global__ void prefixSum(int * indices, int * globalValues, int * localPrefixSumArray ,  int * blockSumArray, int numTriangles, int bits) {
 
 	extern __shared__ int compositeArray[] ;
 	int * count = &compositeArray[0] ;
 	int * blockValues = &compositeArray[RADIXSIZE*blockDim.x] ;
+	int * blockIndices = &compositeArray[(RADIXSIZE+1)*blockDim.x] ;
+	int * localPrefixSum = &compositeArray[(RADIXSIZE+2)*blockDim.x] ;
 
 	int globalID = threadIdx.x + blockDim.x * blockIdx.x ;
 	int threadID = threadIdx.x ;
@@ -49,10 +51,12 @@ __global__ void prefixSum(int * indices, int * globalValues, int numTriangles, i
 	int digit =  0 ;
 	if (globalID < numTriangles) {
 		blockValues[threadID] = globalValues[globalID] ;
-		digit = (blockValues[threadID] & mask) ;
+		blockIndices[threadID] = indices[globalID] ;
+		digit = ((blockValues[threadID] >> bits) & 3) ;
 		count[RADIXSIZE*threadID+digit] = 1 ;
 	} else {
 		blockValues[threadID] = 0 ;
+		blockIndices[threadID] = 0 ;
 	}
 
 	__syncthreads() ;
@@ -76,17 +80,13 @@ __global__ void prefixSum(int * indices, int * globalValues, int numTriangles, i
 	}
 
 	
+	__syncthreads() ;
+
 	if (threadID < RADIXSIZE) { 
-		count[4*(blockDim.x-1)+threadID] = 0 ;
+		count[RADIXSIZE*(blockDim.x-1)+threadID] = 0 ;
 	} // clear the last element  
 
 	__syncthreads() ;
-	if (threadID==0) {
-		for (int i = 0 ; i < blockDim.x ; ++i) {
-				printf("%d : %d\n", i, count[RADIXSIZE*i]);
-		}
-	} 
-
 
 	if (threadID % 2 == 0) {
 		for (int i = 1 ; i < blockDim.x ; i*=2) {
@@ -95,7 +95,6 @@ __global__ void prefixSum(int * indices, int * globalValues, int numTriangles, i
 			if (threadID < 2*i) {
 				int a = offset*(threadID+1)-1;  
 				int b = offset*(threadID+2)-1;  
-				printf("%d : %d %d\n", i, a,b );
 				for (int j = 0 ; j < RADIXSIZE ; ++j) {
 					int temp = count[RADIXSIZE*a+j] ;
 					count[RADIXSIZE*a+j] = count[RADIXSIZE*b+j] ;
@@ -109,34 +108,37 @@ __global__ void prefixSum(int * indices, int * globalValues, int numTriangles, i
 			__syncthreads() ;
 		}
 	}
-	__syncthreads() ;
-
-	if (threadID==0) {
-		for (int i = 0 ; i < blockDim.x ; ++i) {
-			printf("%d : %d\n", i, count[RADIXSIZE*i]) ;
-		}
-	}
 
 	__syncthreads() ;
+
+	localPrefixSum[threadID] = count[RADIXSIZE*threadID+digit] ;
+	blockSumArray[threadID*gridDim.x+blockIdx.x] = count[RADIXSIZE*(blockDim.x-1)+threadID] ;
+
+	__syncthreads() ;
+
+	
 
 	// Offset counts such that radix val 01 is offset by the max val of count 00. //
 	for (int i = 1 ; i < RADIXSIZE ; ++i) {
 		count[RADIXSIZE*threadID+i] += count[RADIXSIZE*(blockDim.x-1)+(i-1)] ;
 	}
-
 	__syncthreads() ;
 
 	if (globalID < numTriangles) {
 		// Shuffle. //
-		int temp = blockValues[threadID] ;
+		int tempv = blockValues[threadID] ;
+		int tempi = blockIndices[threadID] ;
+		int tempLocalPrefixSum = localPrefixSum[threadID] ;
 		__syncthreads() ;
-		blockValues[count[RADIXSIZE*threadID+digit]] = temp ;
-
-		if (threadID==0) {
-			for (int i = 0 ; i < blockDim.x ; ++i) {
-				printf("%d : %d\n", i, blockValues[i]&mask) ;
-			}
-		}
+		int newPos = count[RADIXSIZE*threadID+digit] ;
+		blockValues[newPos] = tempv ;
+		blockIndices[newPos] = tempi ;
+		localPrefixSum[newPos] = tempLocalPrefixSum ;
+		__syncthreads() ;
+		globalValues[globalID] = blockValues[threadID] ;
+		indices[globalID] = blockIndices[threadID] ;
+		localPrefixSumArray[globalID] = localPrefixSum[threadID] ;
 	}
+
 
 }

@@ -33,7 +33,7 @@ class CpuSort : public Sort {
  public:
 	CpuSort(std::string algName) : Sort(algName) { ; } ; 
 	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera) ;
-	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) ;
+	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera, std::vector<float> & sortTime) ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras, 
  		std::vector<float> & times) ;

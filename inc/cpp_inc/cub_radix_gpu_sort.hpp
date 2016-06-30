@@ -1,18 +1,17 @@
-
-#ifndef thrust_SORT_HPP11_J60FNTL1
-#define thrust_SORT_HPP11_J60FNTL1
+#ifndef CUB_RADIX_GPU_SORT_HPP_YMQIXTVO
+#define CUB_RADIX_GPU_SORT_HPP_YMQIXTVO
 
 /*
  * =====================================================================================
  *
- *       Filename:  thrust_sort.hpp
+ *       Filename:  cub_radix_gpu_sort.hpp
  *
- *    Description:  Sort object for thrust sort
+ *    Description:  An implementation of the CUB library radix sort.
  *
  *        Version:  1.0
- *        Created:  2016-06-16 12:49
+ *        Created:  2016-06-30 10:51
  *       Revision:  none
- *       Compiler:  g++
+ *       Compiler:  nvcc
  *
  *         Author:  Michael Tierney (MT), tiernemi@tcd.ie
  *
@@ -24,23 +23,23 @@
 
 /* 
  * ===  CLASS  =========================================================================
- *         Name:  ThrustGPUSort
- *  Description:  Implementaion of thrust sort.
+ *         Name:  CubRadixGPUSort
+ *  Description:  Implementaion of cub radix sort.
  * =====================================================================================
  */
 
 namespace GPUSorts {
 
-class ThrustGPUSort : public Sort {
+class CubRadixGPUSort : public Sort {
  public:
-	ThrustGPUSort() : Sort("Thrust_Sort") { ; } ;
+	CubRadixGPUSort() : Sort("Cub_Radix_GPU_Sort") { ; } ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera)  ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera, std::vector<float> & times) ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras ,
 			std::vector<float> & times) ;
-} ;		/* -----  end of class thrust_sort  ----- */
+} ;		/* -----  end of class radix_sort  ----- */
 
 }
 
-#endif /* end of include guard: thrust_SORT_HPP_J60FNTL1 */
+#endif /* end of include guard: CUB_RADIX_GPU_SORT_HPP_YMQIXTVO */

@@ -20,49 +20,39 @@
 #include "../../inc/cpp_inc/radix_gpu_sort_funcs.hpp"
 #include "../../inc/cu_inc/cuda_error.cuh"
 #include "../../inc/cu_inc/prefix_sum.cuh"
+#include "../../inc/cu_inc/cuda_transforms.cuh"
+#include "../../inc/cu_inc/scattered_write.cuh"
+
+#include "../../../cub-1.5.2/cub/cub.cuh"
 
 #define WARPSIZE 32
+#define RADIXSIZE 4
 
-/* 
- * ===  FUNCTION  ======================================================================
- *         Name:  cudaCalcDistanceSq
- *    Arguments:  float * gpuTriCo - Pointer to gpu triangle co-ordinates.
- *                float * gpuCamCo - Pointer to camera co-ordinates.
- *                float * gpuDistances - Pointer to distances vector which will be
- *                written into an eventually sorted.
- *                int numTriangles - Number of triangles in data set.
- *                int numCameras - Number of cameras to sort relative to.
- *  Description:  Calculates the distance squared of each point relative to the camera.
- *                Reads are clustered in such a way to promote coalesced reading.
- * =====================================================================================
- */
+static void cudaRadixSortKernels(float * gpuDistancesSq, int * gpuTriIds, const int numTriangles, 
+		dim3 & distanceBlock, dim3 & distanceGrid) {
+	int * blockSumArray = NULL ;
+	int * localPrefixSumArray = NULL ;
+	cudaMalloc((void **) &blockSumArray, sizeof(int)*distanceGrid.x*RADIXSIZE) ;
+	cudaMalloc((void **) &localPrefixSumArray, sizeof(int)*distanceGrid.x*distanceBlock.x) ;
+	const int memRequired = distanceBlock.x*sizeof(int)*7 ;
+	for (int i = 0 ; i < 2 ; i+=2) {
+		prefixSum<<<distanceGrid,distanceBlock,memRequired>>>(gpuTriIds, (int*)gpuDistancesSq, localPrefixSumArray, blockSumArray, numTriangles, i) ;
+		// Determine temporary device storage requirements
+		int num_items = RADIXSIZE * distanceGrid.x ;
+		void     *d_temp_storage = NULL;
+		size_t   temp_storage_bytes = 0;
+		cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, blockSumArray, blockSumArray, num_items);
 
-__global__ void cudaCalcDistanceSq(float * gpuTriCo, float * gpuCamCo, float * gpuDistancesSq, 
-		int numTriangles, int numCameras) {
+		// Allocate temporary storage
+		cudaMalloc(&d_temp_storage, temp_storage_bytes);
+		// Run exclusive prefix sum
+		cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, blockSumArray, blockSumArray, num_items);
 
-	// Grid stride loop. //
-	for (int i = threadIdx.x + blockDim.x * blockIdx.x  ; i < numTriangles ; 
-			i += blockDim.x*gridDim.x) {
-		// Coalesced reading of triangles. //
-		float xt = gpuTriCo[i] ;
-		float yt = gpuTriCo[i+numTriangles] ;
-		float zt = gpuTriCo[i+(numTriangles*2)] ;
-		// Coalesced reading of cameras. //
-		float xc = gpuCamCo[0] ;
-		float yc = gpuCamCo[numCameras] ;
-		float zc = gpuCamCo[2*numCameras] ;
-
-		float diffx = xt - xc ;
-		float diffy = yt - yc ;
-		float diffz = zt - zc ;
-
-		gpuDistancesSq[i] = diffx*diffx + diffy*diffy + diffz*diffz ;
+		cudaFree(d_temp_storage) ;
+		scatteredWrite<<<distanceGrid,distanceBlock,3*distanceBlock.x*sizeof(int)>>>(gpuTriIds, (int*)gpuDistancesSq, localPrefixSumArray, blockSumArray, numTriangles, i) ;
+		gpuErrchk(cudaPeekAtLastError()) ;
+		gpuErrchk(cudaDeviceSynchronize()) ;
 	}
-}
-
-
-static void cudaRadixSortKernels(float * distancesSq, int * ids, int numTriangles) {
-	;
 }
 
 void cudaRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
@@ -108,12 +98,9 @@ void cudaRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Camer
 	dim3 distanceBlock(WARPSIZE) ;
 	dim3 distanceGrid(numTriangles/distanceBlock.x + (!(numTriangles%distanceBlock.x)?0:1)) ;
 
-	const int memRequired = distanceBlock.x*sizeof(int)*5 ;
 	for (int i = 0 ; i < numCameras ; ++i) {
 		cudaCalcDistanceSq<<<distanceGrid,distanceBlock>>>(gpuTriCo, gpuCamCo+i, gpuDistancesSq, numTriangles, numCameras) ;
-		prefixSum<<<distanceGrid,distanceBlock, memRequired>>>(gpuTriIds,(int*)gpuDistancesSq, numTriangles, 3) ;
-		gpuErrchk(cudaPeekAtLastError()) ;
-		gpuErrchk(cudaDeviceSynchronize()) ;
+		cudaRadixSortKernels(gpuDistancesSq,gpuTriIds,numTriangles,distanceBlock,distanceGrid) ;
 	}
 
 	// Read back new indices. //

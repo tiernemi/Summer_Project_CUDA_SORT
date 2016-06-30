@@ -17,6 +17,7 @@ CXXSRCDIR = ./src/cpp_src/
 CUSRCDIR = ./src/cu_src/
 CPPINCDIR = ./inc/cpp_inc/
 CUINCDIR = ./inc/cu_inc/
+CUBPATH = ~/cub-1.5.2/cub/
 
 ####### Files
 CXXFILES= $(shell ls $(CXXSRCDIR)*.cpp | xargs -n1 basename)
@@ -52,7 +53,7 @@ $(CXXOBJECTS): %.o: $$(addprefix $(CXXSRCDIR), $$(notdir %)).cpp $(HEADERS)
 #easeperate compilation
 .SECONDEXPANSION:
 $(CUOBJECTS): %.o: $$(addprefix $(CUSRCDIR), $$(notdir %)).cu $(HEADERS)
-	$(NVCC) -c $< $(NVCCFLAGS) -I$(INCPATH) -I$(CUINCDIR) -I$(CPPINCDIR) -o $@ 
+	$(NVCC) -c $< $(NVCCFLAGS) -I$(CUBPATH)  -I$(INCPATH) -I$(CUINCDIR) -I$(CPPINCDIR) -o $@ 
 
 $(BIN):
 	mkdir $(BIN)

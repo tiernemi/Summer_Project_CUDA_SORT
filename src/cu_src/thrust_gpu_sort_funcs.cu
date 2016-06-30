@@ -53,6 +53,15 @@ struct calcDistance : public thrust::binary_function<Tuple3f,Tuple3f,float> {
 	}
 } ;
 
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  cudaThrustSortTriangles
+ *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles to sort.
+ *                std::vector<Camera> & cameras - Vector of cameras to sort relative to.
+ *  Description:  Sorts the triangles using the default thrust sort.
+ * =====================================================================================
+ */
+
 void cudaThrustSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
 	// Pre process triangle co-ordinates. //
 	std::vector<float> triCo(3*triangles.size()) ;
@@ -129,24 +138,21 @@ void cudaThrustSortTriangles(std::vector<Triangle> & triangles, std::vector<Came
 	}
 }
 
-
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  cudaThrustSortTriangles
  *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles to sort.
  *                std::vector<Camera> & cameras - Vector of cameras to sort relative to.
- *		          std::vector<float> & times - Vector of times 
- *
- *      Returns:  
- *  Description:  
+ *		          std::vector<float> & times - Vector of times used for benchmarking.
+ *  Description:  Sorts the triangles using the default thrust sort.
  * =====================================================================================
  */
 
 void cudaThrustSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras, 
 		std::vector<float> & times) {
-	cudaEvent_t start, stop;
-	cudaEventCreate(&start);
-	cudaEventCreate(&stop);
+	cudaEvent_t start, stop ;
+	cudaEventCreate(&start) ;
+	cudaEventCreate(&stop) ;
 	std::vector<float> newTimes ;
 
 	// Pre process triangle co-ordinates. //
@@ -208,20 +214,40 @@ void cudaThrustSortTriangles(std::vector<Triangle> & triangles, std::vector<Came
 
 	// For each camera get distance and sort ids. //
 	for (int i = 0 ; i < numCameras ; ++i) {
+		cudaEventRecord(start, 0) ;
+
 		thrust::constant_iterator<Tuple3f> cam(*(zipCamBegin+i)) ;
 		thrust::permutation_iterator<ZipIteratorTuple,DevVecIteratori> permIter(zipTriBegin,devTriIds.begin()) ;
 		thrust::transform(thrust::device, permIter, permIter+numTriangles, cam, devDists.begin(), calcDistance());
-		cudaEventRecord(start, 0);
+
+		cudaEventRecord(stop, 0) ;
+		cudaEventSynchronize(stop) ;
+		float transformTime ;
+		cudaEventElapsedTime(&transformTime , start, stop) ;
+
+		cudaEventRecord(start, 0) ;
 		thrust::sort_by_key(thrust::device, devValPtr,devValPtr+numTriangles,devKeyPtr) ;
-		cudaEventRecord(stop, 0);
+		cudaEventRecord(stop, 0) ;
 		cudaEventSynchronize(stop);
-		float elapsedTime ;
-		cudaEventElapsedTime(&elapsedTime , start, stop) ;
-		newTimes.push_back(elapsedTime/1E3) ;
+		float sortTime ;
+		cudaEventElapsedTime(&sortTime , start, stop) ;
+
+		cudaEventRecord(start, 0) ;
+		// GPU copy back to CPU. //
+		thrust::copy(devTriIds.begin(),devTriIds.end(),triIds.begin()) ;
+		cudaEventRecord(stop, 0) ;
+		cudaEventSynchronize(stop);
+		float transferTime ;
+		cudaEventElapsedTime(&transferTime , start, stop) ;
+
+		float totalTime = transformTime + transferTime + sortTime ;
+		float incTransTime = sortTime + transformTime ;
+		float sortOnlyTime = sortTime  ;
+		newTimes.push_back(totalTime/1E3) ;
+		newTimes.push_back(incTransTime/1E3) ;
+		newTimes.push_back(sortOnlyTime/1E3) ;
 	}
 
-	// GPU copy back to CPU. //
-	thrust::copy(devTriIds.begin(),devTriIds.end(),triIds.begin()) ;
 
 	// CPU Overwrite triangles. //
 	std::vector<Triangle> temp = triangles ;

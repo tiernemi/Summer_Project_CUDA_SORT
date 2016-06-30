@@ -55,37 +55,6 @@ static const unsigned int histSize = 1024 ;
 static const unsigned int offSize = 256 ;
 static void sortRadices(const float * input, unsigned int * indicesEx, unsigned int size) ;
 
-/* 
- * ===  MEMBER FUNCTION CLASS : RadixSortHoff  ==============================================
- *         Name:  sortTriangles
- *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
- *                Camera & camera - Camera to sort relative to.
- *  Description:  Uses stl sort to sort triangles.
- * =====================================================================================
- */
-
-void RadixSortHoff::sortTriangles(std::vector<Triangle> & triangles, Camera & camera) {
-	// Convert to sortable form //
-	std::vector<std::pair<int,float>> distances(triangles.size()) ;
-	std::vector<Triangle> temp = triangles ;
-	Transforms::transformToDistVec(distances, triangles, camera) ;
-	sortDistances(distances) ;
-	// Reorder triangles. //
-	for (unsigned int k = 0 ; k < distances.size() ; ++k) {
-		temp[k] = triangles[distances[k].first] ;
-	}
-	triangles = temp ;
-}		/* -----  end of member function function  ----- */
-
-/* 
- * ===  MEMBER FUNCTION CLASS : RadixSortHoff  ==============================================
- *         Name:  function
- *    Arguments:  std::vector<std::pair<int,float>> & distances - Vector of distances and
- *                ids.
- *  Description:  Sorts vector of distances based on camera location. Use stl sort.
- * =====================================================================================
- */
-
 void RadixSortHoff::sortDistances(std::vector<std::pair<int,float>> & distances) {
 	float * input = new float[distances.size()] ;
 	unsigned int * indices = new unsigned int[distances.size()] ;
@@ -101,29 +70,6 @@ void RadixSortHoff::sortDistances(std::vector<std::pair<int,float>> & distances)
 	delete [] input ;
 	delete [] indices ;
 	
-}		/* -----  end of member function function  ----- */
-
-/* 
- * ===  MEMBER FUNCTION CLASS : RadixSortHoff  ==============================================
- *         Name:  sortTriangles
- *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
- *                Camera & camera - Camera to sort relative to.
- *                float & sortTime - Times taken to sort for each camera.
- *  Description:  Uses stl sort to sort triangles and times these sorts.
- * =====================================================================================
- */
-
-void RadixSortHoff::sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) {
-	// Convert to sortable form //
-	std::vector<std::pair<int,float>> distances(triangles.size()) ;
-	std::vector<Triangle> temp = triangles ;
-	Transforms::transformToDistVec(distances, triangles, camera) ;
-	sortDistances(distances, sortTime) ;
-	// Reorder triangles. //
-	for (unsigned int k = 0 ; k < distances.size() ; ++k) {
-		temp[k] = triangles[distances[k].first] ;
-	}
-	triangles = temp ;
 }		/* -----  end of member function function  ----- */
 
 /* 
@@ -155,42 +101,6 @@ void RadixSortHoff::sortDistances(std::vector<std::pair<int,float>> & distances,
 	delete [] input ;
 	delete [] indices ;
 	
-}		/* -----  end of member function function  ----- */
-
-/* 
- * ===  MEMBER FUNCTION CLASS : RadixSortHoff  ===========================================
- *         Name:  sortTriangles
- *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
- *                std::vector<Camera> & cameras - Vector of cameras.
- *  Description:  Uses radix sort to sort triangles based on vector of cameras.
- * =====================================================================================
- */
-
-void RadixSortHoff::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
-	for (unsigned int i = 0 ; i < cameras.size() ; ++i) {
-		sortTriangles(triangles,cameras[i]) ;
-	}
-}		/* -----  end of member function function  ----- */
-
-/* 
- * ===  MEMBER FUNCTION CLASS : RadixSortHoff  ===========================================
- *         Name:  sortTriangles
- *    Arguments:  std::vector<Triangle> & triangles - Vector of triangles.
- *                std::vector<Camera> & cameras - Vector of cameras.
- *                std::vector<float> times - Vector of sort times for each camera.
- *  Description:  Uses radix sort to sort triangles based on vector of cameras.
- * =====================================================================================
- */
-
-void RadixSortHoff::sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras,
-		std::vector<float> & times) {
-	std::vector<float> newTimes ;
-	for (unsigned int i = 0 ; i < cameras.size() ; ++i) {
-		float sortTime = 0 ;
-		sortTriangles(triangles,cameras[i],sortTime) ;
-		newTimes.push_back(sortTime) ;
-	}
-	times = newTimes ;
 }		/* -----  end of member function function  ----- */
 
 /* 

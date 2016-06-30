@@ -1,6 +1,6 @@
 set terminal postscript enhanced color
-set output "./plots/sortMultCameraComparison.eps"
-set title "Sort Rate Vs Camera ID For Multiple Algorithms"
+set output "./plots/sortMultCameraComparisonTot.eps"
+set title "Sort Rate Vs Camera ID For Multiple Algorithms : Total Time"
 set ylabel "Sort-Rate (M/s)"
 #set xtics rotate out
 
@@ -8,7 +8,33 @@ set xlabel "Camera ID"
 datFiles = system('ls bench_data/times*')
 namesFiles =  system("ls bench_data/times* | gawk 'match($0, /times([A-Z][a-z]*)_([A-Z][a-z]*)/, a) {print a[1]a[2]}' ")
 
-plot for [i=1:words(datFiles)] word(datFiles,i) using 3 lt i with linespoints title sprintf("%s", word(namesFiles,i))
+plot for [i=1:words(datFiles)] word(datFiles,i) using 5 lt i with linespoints title sprintf("%s", word(namesFiles,i))
+
+set terminal postscript enhanced color
+set output "./plots/sortMultCameraComparisonTransInc.eps"
+set title "Sort Rate Vs Camera ID For Multiple Algorithms : Sort+Transform"
+set ylabel "Sort-Rate (M/s)"
+#set xtics rotate out
+
+set xlabel "Camera ID"
+datFiles = system('ls bench_data/times*')
+namesFiles =  system("ls bench_data/times* | gawk 'match($0, /times([A-Z][a-z]*)_([A-Z][a-z]*)/, a) {print a[1]a[2]}' ")
+
+plot for [i=1:words(datFiles)] word(datFiles,i) using 6 lt i with linespoints title sprintf("%s", word(namesFiles,i))
+
+set terminal postscript enhanced color
+set output "./plots/sortMultCameraComparisonSortOnly.eps"
+set title "Sort Rate Vs Camera ID For Multiple Algorithms : Sort Only"
+set ylabel "Sort-Rate (M/s)"
+#set xtics rotate out
+
+set xlabel "Camera ID"
+datFiles = system('ls bench_data/times*')
+namesFiles =  system("ls bench_data/times* | gawk 'match($0, /times([A-Z][a-z]*)_([A-Z][a-z]*)/, a) {print a[1]a[2]}' ")
+
+plot for [i=1:words(datFiles)] word(datFiles,i) using 7 lt i with linespoints title sprintf("%s", word(namesFiles,i))
+
+
 
 set terminal postscript enhanced color
 set output "./plots/sortRateScoreComparisonZ.eps"
@@ -23,7 +49,7 @@ set logscale y
 datFiles = system('ls bench_data/sortedness*')
 namesFiles =  system("ls bench_data/sortedness* | gawk 'match($0, /sortedness([A-Z][a-z]*)_([A-Z][a-z]*)/, a) {print a[1]a[2]}' ")
 
-plot for [i=1:words(datFiles)] word(datFiles,i) using 4:3 lt i with linespoints title sprintf("%s", word(namesFiles,i))
+plot for [i=1:words(datFiles)] word(datFiles,i) using 8:5 lt i with linespoints title sprintf("%s", word(namesFiles,i))
 
 set terminal postscript enhanced color
 set output "./plots/sortRateScoreComparisonUnz.eps"
@@ -38,7 +64,7 @@ set logscale y
 datFiles = system('ls bench_data/sortedness*')
 namesFiles =  system("ls bench_data/sortedness* | gawk 'match($0, /sortedness([A-Z][a-z]*)_([A-Z][a-z]*)/, a) {print a[1]a[2]}' ")
 
-plot for [i=1:words(datFiles)] word(datFiles,i) using 4:3 lt i with linespoints title sprintf("%s", word(namesFiles,i))
+plot for [i=1:words(datFiles)] word(datFiles,i) using 8:5 lt i with linespoints title sprintf("%s", word(namesFiles,i))
 
 unset logscale y
 set terminal postscript enhanced color

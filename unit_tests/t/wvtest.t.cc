@@ -22,7 +22,7 @@ WVTEST_MAIN("Sorting tests")
 {
 	std::vector<Triangle> triangles ;
 	std::vector<Camera> cameras ;
-	std::string filename("/home/users/mschpc/2015/tiernemi/project/data/smallData.txt") ;
+	std::string filename("/home/users/mschpc/2015/tiernemi/project/data/testDataP2.txt") ;
 	FileLoader::loadFile(triangles,cameras,filename) ;
 
 	std::vector<std::pair<int,float>> distances(triangles.size()) ;
@@ -73,12 +73,19 @@ WVTEST_MAIN("Sorting tests")
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
 
+	/*  
 	GPUSorts::RadixGPUSort radixGPUSorter ;
 	radixGPUSorter.sortTriangles(triangles,cameras) ;
 	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
+	*/
 
+	GPUSorts::CubRadixGPUSort cubSorter ;
+	cubSorter.sortTriangles(triangles,cameras) ;
+	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
+	WVPASSEQ(Tests::checkSorted(distances),1) ;
+	triangles = temp ;
 }
 
 

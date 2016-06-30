@@ -38,7 +38,7 @@ class Sort {
  public:
 	Sort(std::string algName) : algName{algName} { ; } ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera) = 0 ;
-	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera, float & sortTime) = 0 ;
+	virtual void sortTriangles(std::vector<Triangle> & triangles, Camera & camera, std::vector<float> & times) = 0 ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) = 0 ;
 	virtual void sortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras, 
 			std::vector<float> & times) = 0 ;

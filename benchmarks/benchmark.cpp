@@ -38,21 +38,24 @@
 #include "../inc/cpp_inc/test_funcs.hpp"
 #include "../inc/cpp_inc/sort_algs.hpp"
 
-void runCPUBenchs(std::vector<Sort*> & sorts,
+void runBenchs(std::vector<Sort*> & sorts,
 		std::vector<Triangle> & triangles, std::vector<Camera> & camera, 
-		std::vector<std::vector<float>> & times, std::vector<std::vector<float>> & percentSorts) ;
+		std::vector<std::vector<float>> & times, std::vector<std::vector<float>> & cpuPercentSorts) ;
 void runSortednessBenchs(std::vector<Sort*> & sorts, std::vector<Triangle> & triangles
 		, Camera & camera, std::vector<std::vector<float>> & times
 		, std::vector<std::vector<float>> & sortedness, std::mt19937 & gen) ;
-void outputTimeResults(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
+void outputTimeResultsCPU(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
 		std::vector<unsigned int> & numElements, std::vector<std::string> & filenames, 
-		std::vector<std::vector<std::vector<float>>> & percentSorts) ;
+		std::vector<std::vector<std::vector<float>>> & cpuPercentSorts) ;
+void outputTimeResultsGPU(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
+		std::vector<unsigned int> & numElements, std::vector<std::string> & filenames, 
+		std::vector<std::vector<std::vector<float>>> & cpuPercentSorts) ;
 void outputSortednessResults(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
 		std::vector<unsigned int> & numElements, std::vector<std::string> & filenames, 
 		std::vector<std::vector<std::vector<float>>> & sortedness) ;
 void outputSpeedUpResults(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
 		int id1, int id2, std::vector<unsigned int> & numElements, std::vector<std::string> & filenames, 
-		std::vector<std::vector<std::vector<float>>> & percentSorts) ;
+		std::vector<std::vector<std::vector<float>>> & cpuPercentSorts) ;
 
 std::mt19937 gen ;
 
@@ -63,59 +66,74 @@ int main(int argc, char *argv[]) {
 	// Variables storing benchmark data. //
 	std::vector<Triangle> triangles ;
 	std::vector<Camera> cameras ;
-	std::vector<std::vector<std::vector<float>>> sortTimes ;
-	std::vector<std::vector<std::vector<float>>> sortednessTimes ;
-	std::vector<std::vector<std::vector<float>>> percentSorts ;
-	std::vector<std::vector<std::vector<float>>> sortedness ;
-	std::vector<Sort*> sorts ;
+	std::vector<std::vector<std::vector<float>>> cpuSortTimes ;
+	std::vector<std::vector<std::vector<float>>> cpuSortednessTimes ;
+	std::vector<std::vector<std::vector<float>>> cpuPercentSorts ;
+	std::vector<std::vector<std::vector<float>>> cpuSortedness ;
+	std::vector<std::vector<std::vector<float>>> gpuSortTimes ;
+	std::vector<std::vector<std::vector<float>>> gpuSortednessTimes ;
+	std::vector<std::vector<std::vector<float>>> gpuPercentSorts ;
+	std::vector<std::vector<std::vector<float>>> gpuSortedness ;
+	std::vector<Sort*> cpuSorts ;
+	std::vector<Sort*> gpuSorts ;
 	std::vector<std::string> names ;
 	std::vector<std::string> filenames ;
 	std::vector<unsigned int> numElements ;
 
-	// Run time benchmarks. //
+	// Declare CPU sorts. //
 	CPUSorts::STLSort stlSorter ;
 	CPUSorts::BitonicSort bitonicSorter ;
 	CPUSorts::RadixSortPT radixSorterPT ;
 	CPUSorts::RadixSortHoff radixSorterHoff ;
 	CPUSorts::RadixSortHybrid radixSorterHybrid ;
 	CPUSorts::BubbleSort bubbleSorter ;
+	// Declare GPU sorts. //
 	GPUSorts::ThrustGPUSort thrustSorter ;
+	GPUSorts::CubRadixGPUSort cubSorter ;
 	// Add sorts. //
-	sorts.push_back(&stlSorter) ;
+	cpuSorts.push_back(&stlSorter) ;
 	//sorts.push_back(&bubbleSorter) ;
 	//sorts.push_back(&bitonicSorter) ;
-	sorts.push_back(&radixSorterPT) ;
-	sorts.push_back(&radixSorterHoff) ;
-	sorts.push_back(&radixSorterHybrid) ;
-	sorts.push_back(&thrustSorter) ;
+	cpuSorts.push_back(&radixSorterPT) ;
+	cpuSorts.push_back(&radixSorterHoff) ;
+	cpuSorts.push_back(&radixSorterHybrid) ;
+	gpuSorts.push_back(&thrustSorter) ;
+	gpuSorts.push_back(&cubSorter) ;
 
 	// Read in file names. //
 	for (int i = 1 ; i < argc ; ++i) {
 		filenames.push_back(argv[i]) ;
 	}
 	numElements.resize(filenames.size()) ;
-	sortTimes.resize(filenames.size()) ;
-	sortednessTimes.resize(filenames.size()) ;
-	percentSorts.resize(filenames.size()) ;
-	sortedness.resize(filenames.size()) ;
+	cpuSortTimes.resize(filenames.size()) ;
+	cpuSortednessTimes.resize(filenames.size()) ;
+	cpuPercentSorts.resize(filenames.size()) ;
+	cpuSortedness.resize(filenames.size()) ;
+	
+	gpuSortTimes.resize(filenames.size()) ;
+	gpuSortednessTimes.resize(filenames.size()) ;
+	gpuPercentSorts.resize(filenames.size()) ;
+	gpuSortedness.resize(filenames.size()) ;
 
 	// For each filename, load and run benchmarks. //
 	for (unsigned int i = 0 ; i < filenames.size() ; ++i) {
 		FileLoader::loadFile(triangles,cameras,filenames[i]) ;
 		numElements[i] = triangles.size() ;
 		// Run CPU sorts for this data set. //
-		runCPUBenchs(sorts,triangles,cameras,sortTimes[i],percentSorts[i]) ;
+		runBenchs(cpuSorts, triangles, cameras, cpuSortTimes[i], cpuPercentSorts[i]) ;
+		runBenchs(gpuSorts, triangles, cameras, gpuSortTimes[i], gpuPercentSorts[i]) ;
 		// Measure performance of sorting algorithms Vs sortedness of array. //
-//		runSortednessBenchs(sorts,triangles,cameras[0],sortednessTimes[i],sortedness[i],gen) ;
+//		runSortednessBenchs(sorts,triangles,cameras[0],cpuSortednessTimes[i],sortedness[i],gen) ;
 	}
 
 	// Output time data. //
-	outputTimeResults(sortTimes, sorts, numElements, filenames,percentSorts) ;
+	outputTimeResultsCPU(cpuSortTimes, cpuSorts, numElements, filenames, cpuPercentSorts) ;
+	outputTimeResultsGPU(gpuSortTimes, gpuSorts, numElements, filenames, gpuPercentSorts) ;
 	// Output sortedness data. //
-//	outputSortednessResults(sortednessTimes, sorts, numElements, filenames, sortedness) ;
+//	outputSortednessResults(cpuSortednessTimes, sorts, numElements, filenames, sortedness) ;
 	// SpeedUp data. //
-	outputSpeedUpResults(sortTimes, sorts, 4, 0, numElements, filenames, percentSorts) ;
-	outputSpeedUpResults(sortTimes, sorts, 4, 1, numElements, filenames, percentSorts) ;
+	//outputSpeedUpResults(sortTimes, cpuSorts, 4, 0, numElements, filenames, cpuPercentSorts) ;
+	//outputSpeedUpResults(sortTimes, cpuSorts, 4, 1, numElements, filenames, cpuPercentSorts) ;
 
 	return EXIT_SUCCESS ;
 }
@@ -127,15 +145,15 @@ int main(int argc, char *argv[]) {
  *                std::vector<Triangle> & triangles - Vector of triangle objects.
  *                std::vector<Camera> & cameras - Vector of cameras.
  *                std::vector<std::vector<float>> & times - Vector for timing data.
- *                std::vector<std::vector<float>> & percentSorts - Vector for percentage
+ *                std::vector<std::vector<float>> & cpuPercentSorts - Vector for percentage
  *                sorted.
  *  Description:  Runs timing and coherency benchmarks for each sorting algorithm.
  * =====================================================================================
  */
 
-void runCPUBenchs(std::vector<Sort*> & sorts, std::vector<Triangle> & triangles
+void runBenchs(std::vector<Sort*> & sorts, std::vector<Triangle> & triangles
 		, std::vector<Camera> & cameras, std::vector<std::vector<float>> & times
-		, std::vector<std::vector<float>> & percentSorts) {
+		, std::vector<std::vector<float>> & cpuPercentSorts) {
 
 	std::vector<Triangle> tempTriangles = triangles ;
 	for (unsigned int i = 0 ; i < sorts.size() ; ++i) {
@@ -145,14 +163,17 @@ void runCPUBenchs(std::vector<Sort*> & sorts, std::vector<Triangle> & triangles
 		for (unsigned int j = 0 ; j < cameras.size() ; ++j) {
 			std::cout << "Benchmarking : " << sorts[i]->getAlgName() <<
 				" Camera : " << j  << std::endl ;
-			float sortTime = 0 ;
+			std::vector<float> sortTimes ;
 			newSorts.push_back(Tests::calcPercentSorted(tempTriangles,cameras[j])) ;
-			sorts[i]->sortTriangles(tempTriangles,cameras[j],sortTime) ;
-			newTimes.push_back(sortTime) ;
+			sorts[i]->sortTriangles(tempTriangles,cameras[j],sortTimes) ;
+			// Push back time information for this camera. //
+			newTimes.push_back(sortTimes[0]) ;
+			newTimes.push_back(sortTimes[1]) ;
+			newTimes.push_back(sortTimes[2]) ;
 		}
 		std::vector<float> newSortPercents ;
 		times.push_back(newTimes) ;
-		percentSorts.push_back(newSorts) ;
+		cpuPercentSorts.push_back(newSorts) ;
 	}
 }		/* -----  end of function runBenchs  ----- */
 
@@ -163,7 +184,7 @@ void runCPUBenchs(std::vector<Sort*> & sorts, std::vector<Triangle> & triangles
  *                std::vector<Triangle> & triangles - Vector of triangle objects.
  *                std::vector<Camera> & cameras - Camera to sort relative to.
  *                std::vector<std::vector<float>> & times - Vector for timing data.
- *                std::vector<std::vector<float>> & percentSorts - Vector for storing
+ *                std::vector<std::vector<float>> & cpuPercentSorts - Vector for storing
  *                sort scores.
  *                std::mt19937 gen - Random number generator.
  *  Description:  Runs benchmarks tracking how various sorting algorithms perform as
@@ -187,11 +208,13 @@ void runSortednessBenchs(std::vector<Sort*> & sorts, std::vector<Triangle> & tri
 			tempTriangles = triangles ;
 			std::cout << "Benchmarking : " << sorts[i]->getAlgName() <<
 				" Sort Score : " << targetScores[j]  << std::endl ;
-			float sortTime = 0 ;
+			std::vector<float> sortTimes ;
 			Tests::makePercentSorted(tempTriangles,camera,targetScores[j],gen) ;
 			scores.push_back(Tests::calcPercentSorted(tempTriangles,camera)) ;
-			sorts[i]->sortTriangles(tempTriangles,camera,sortTime) ;
-			newTimes.push_back(sortTime) ;
+			sorts[i]->sortTriangles(tempTriangles,camera,sortTimes) ;
+			newTimes.push_back(sortTimes[0]) ;
+			newTimes.push_back(sortTimes[1]) ;
+			newTimes.push_back(sortTimes[2]) ;
 		}
 		times.push_back(newTimes) ;
 		sortedness.push_back(scores) ;
@@ -200,20 +223,20 @@ void runSortednessBenchs(std::vector<Sort*> & sorts, std::vector<Triangle> & tri
 
 /* 
  ======================================================================================
- *         Name:  outputTimeResults
+ *         Name:  outputTimeResultsCPU
  *    Arguments:  std::vector<std::vector<std::vector<float>>> & times - All bench times.
  *                std::vector<Sort*> & sorts - Array of sorting algorithms.
  *		          std::vector<unsigned int> & numElements - Number of elements per file.
  *		          std::vector<std::string> & filenames - Names of the files.
- *                std::vector<std::vector<std::vector<float>>> & percentSorts - All
+ *                std::vector<std::vector<std::vector<float>>> & cpuPercentSorts - All
  *                bench sorting percentage data.
  *  Description:  Outputs time benchmark data.
  * =====================================================================================
  */
 
-void outputTimeResults(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
+void outputTimeResultsCPU(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
 		std::vector<unsigned int> & numElements, std::vector<std::string> & filenames, 
-		std::vector<std::vector<std::vector<float>>> & percentSorts) {
+		std::vector<std::vector<std::vector<float>>> & cpuPercentSorts) {
 	for (unsigned int i = 0 ; i < numElements.size() ; ++i) {
 		for (unsigned int j = 0 ; j < times[i].size() ; ++j) {	
 			char base[1000] ;
@@ -221,10 +244,51 @@ void outputTimeResults(std::vector<std::vector<std::vector<float>>> & times, std
 			std::string datFileName = "./bench_data/times" + sorts[j]->getAlgName() + 
 				std::to_string(numElements[i]) + basename(base) ;
 			std::ofstream output(datFileName) ;
-			for (unsigned int k = 0 ; k < times[i][j].size() ; ++k) {
-				float sortRate = numElements[i]/(times[i][j][k]*1E6) ;
-				output << numElements[i] << " " << times[i][j][k] << " " <<  sortRate 
-				<< " " << percentSorts[i][j][k] << std::endl ;
+			for (unsigned int k = 0 ; k < times[i][j].size() ; k+=3) {
+				float sortRateTot = numElements[i]/(times[i][j][k]*1E6) ;
+				float sortRateTransformsInc = numElements[i]/(times[i][j][k+1]*1E6) ;
+				float sortRateSortOnly = numElements[i]/(times[i][j][k+2]*1E6) ;
+				output << numElements[i] << " " << times[i][j][k+1] << " " << times[i][j][k+2] 
+				<< " " << times[i][j][k+3] <<  " " << sortRateTot << " " << 
+				sortRateTransformsInc << " " << sortRateSortOnly << " " << 
+				cpuPercentSorts[i][j][k/3] << std::endl ;
+			}
+			output.close() ;
+		}
+	}
+}		/* -----  end of function   ----- */
+
+/* 
+ ======================================================================================
+ *         Name:  outputTimeResultsGPU
+ *    Arguments:  std::vector<std::vector<std::vector<float>>> & times - All bench times.
+ *                std::vector<Sort*> & sorts - Array of sorting algorithms.
+ *		          std::vector<unsigned int> & numElements - Number of elements per file.
+ *		          std::vector<std::string> & filenames - Names of the files.
+ *                std::vector<std::vector<std::vector<float>>> & cpuPercentSorts - All
+ *                bench sorting percentage data.
+ *  Description:  Outputs time benchmark data.
+ * =====================================================================================
+ */
+
+void outputTimeResultsGPU(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
+		std::vector<unsigned int> & numElements, std::vector<std::string> & filenames, 
+		std::vector<std::vector<std::vector<float>>> & cpuPercentSorts) {
+	for (unsigned int i = 0 ; i < numElements.size() ; ++i) {
+		for (unsigned int j = 0 ; j < times[i].size() ; ++j) {	
+			char base[1000] ;
+			strcpy(base,filenames[i].c_str()) ;
+			std::string datFileName = "./bench_data/times" + sorts[j]->getAlgName() + 
+				std::to_string(numElements[i]) + basename(base) ;
+			std::ofstream output(datFileName) ;
+			for (unsigned int k = 0 ; k < times[i][j].size() ; k+=3) {
+				float sortRateTot = numElements[i]/(times[i][j][k]*1E6) ;
+				float sortRateTransformsInc = numElements[i]/(times[i][j][k+1]*1E6) ;
+				float sortRateSortOnly = numElements[i]/(times[i][j][k+2]*1E6) ;
+				output << numElements[i] << " " << times[i][j][k] << " " 
+				<< times[i][j][k+1] << " " << times[i][j][k+2] << " " <<
+				sortRateTot << " " << sortRateTransformsInc << " " << sortRateSortOnly
+				<< " " << cpuPercentSorts[i][j][k/3] << std::endl ;
 			}
 			output.close() ;
 		}
