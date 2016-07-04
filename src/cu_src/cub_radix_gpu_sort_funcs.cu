@@ -65,10 +65,14 @@ void cudaCubRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Ca
 	float * gpuCamCo = NULL ;
 	float * gpuDistancesSq = NULL ;
 	int * gpuTriIds = NULL ;
+	int * gpuTriIdsOut = NULL ;
+	float * gpuDistancesSqOut = NULL ;
 	cudaMalloc((void **) &gpuTriCo, sizeof(float)*triCo.size()) ;
 	cudaMalloc((void **) &gpuCamCo, sizeof(float)*camCo.size()) ;
 	cudaMalloc((void **) &gpuTriIds, sizeof(int)*triIds.size()) ;
+	cudaMalloc((void **) &gpuTriIdsOut, sizeof(int)*triIds.size()) ;
 	cudaMalloc((void **) &gpuDistancesSq, sizeof(float)*triangles.size()) ;
+	cudaMalloc((void **) &gpuDistancesSqOut, sizeof(float)*triangles.size()) ;
 
 	cudaMemcpy(gpuTriCo, triCo.data(), sizeof(float)*triCo.size(), cudaMemcpyHostToDevice) ;
 	cudaMemcpy(gpuCamCo, camCo.data(), sizeof(float)*camCo.size(), cudaMemcpyHostToDevice) ;
@@ -78,7 +82,7 @@ void cudaCubRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Ca
 	void * tempStorage = NULL ;
 	size_t tempStorageBytes = 0 ;
 	cub::DeviceRadixSort::SortPairs(tempStorage, tempStorageBytes, gpuDistancesSq, 
-			gpuDistancesSq, gpuTriIds, gpuTriIds, numTriangles) ;
+			gpuDistancesSqOut, gpuTriIds, gpuTriIdsOut, numTriangles) ;
 	cudaMalloc(&tempStorage, tempStorageBytes) ;
 
 	// Block dimensions for transforms. //
@@ -87,13 +91,12 @@ void cudaCubRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Ca
 
 	// For each camera, transforms and use the cub radix sort to sort. //
 	for (int i = 0 ; i < numCameras ; ++i) {
-		cudaCalcDistanceSq<<<distanceGrid,distanceBlock>>>(gpuTriCo, gpuCamCo+i, gpuDistancesSq, numTriangles, numCameras) ;
+		cudaCalcDistanceSq<<<distanceGrid,distanceBlock>>>(gpuTriCo, gpuCamCo+i, gpuDistancesSq, gpuTriIds, numTriangles, numCameras) ;
 		cub::DeviceRadixSort::SortPairs(tempStorage, tempStorageBytes, gpuDistancesSq, 
-			gpuDistancesSq, gpuTriIds, gpuTriIds, numTriangles) ;
-	}
+			gpuDistancesSqOut, gpuTriIds, gpuTriIdsOut, numTriangles) ;
 
-	// Read back new indices. //
-	cudaMemcpy(triIds.data(), gpuTriIds, sizeof(int)*triIds.size(), cudaMemcpyDeviceToHost) ;
+		cudaMemcpy(triIds.data(), gpuTriIdsOut, sizeof(int)*triIds.size(), cudaMemcpyDeviceToHost) ;
+	}
 
 	// Free GPU memory. //
 	cudaFree(gpuTriIds) ;
@@ -158,10 +161,14 @@ void cudaCubRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Ca
 	float * gpuCamCo = NULL ;
 	float * gpuDistancesSq = NULL ;
 	int * gpuTriIds = NULL ;
+	int * gpuTriIdsOut = NULL ;
+	float * gpuDistancesSqOut = NULL ;
 	cudaMalloc((void **) &gpuTriCo, sizeof(float)*triCo.size()) ;
 	cudaMalloc((void **) &gpuCamCo, sizeof(float)*camCo.size()) ;
 	cudaMalloc((void **) &gpuTriIds, sizeof(int)*triIds.size()) ;
+	cudaMalloc((void **) &gpuTriIdsOut, sizeof(int)*triIds.size()) ;
 	cudaMalloc((void **) &gpuDistancesSq, sizeof(float)*triangles.size()) ;
+	cudaMalloc((void **) &gpuDistancesSqOut, sizeof(float)*triangles.size()) ;
 
 	cudaMemcpy(gpuTriCo, triCo.data(), sizeof(float)*triCo.size(), cudaMemcpyHostToDevice) ;
 	cudaMemcpy(gpuCamCo, camCo.data(), sizeof(float)*camCo.size(), cudaMemcpyHostToDevice) ;
@@ -171,7 +178,7 @@ void cudaCubRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Ca
 	void * tempStorage = NULL ;
 	size_t tempStorageBytes = 0 ;
 	cub::DeviceRadixSort::SortPairs(tempStorage, tempStorageBytes, gpuDistancesSq, 
-			gpuDistancesSq, gpuTriIds, gpuTriIds, numTriangles) ;
+			gpuDistancesSqOut, gpuTriIds, gpuTriIdsOut, numTriangles) ;
 	cudaMalloc(&tempStorage, tempStorageBytes) ;
 
 	// Block dimensions for transforms. //
@@ -182,7 +189,7 @@ void cudaCubRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Ca
 	for (int i = 0 ; i < numCameras ; ++i) {
 		cudaEventRecord(start, 0) ;
 		
-		cudaCalcDistanceSq<<<distanceGrid,distanceBlock>>>(gpuTriCo, gpuCamCo+i, gpuDistancesSq, numTriangles, numCameras) ;
+		cudaCalcDistanceSq<<<distanceGrid,distanceBlock>>>(gpuTriCo, gpuCamCo+i, gpuDistancesSq, gpuTriIds, numTriangles, numCameras) ;
 
 		cudaEventRecord(stop, 0) ;
 		cudaEventSynchronize(stop) ;
@@ -191,7 +198,7 @@ void cudaCubRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Ca
 
 		cudaEventRecord(start, 0);
 		cub::DeviceRadixSort::SortPairs(tempStorage, tempStorageBytes, gpuDistancesSq, 
-			gpuDistancesSq, gpuTriIds, gpuTriIds, numTriangles) ;
+			gpuDistancesSqOut, gpuTriIds, gpuTriIdsOut, numTriangles) ;
 		cudaEventRecord(stop, 0) ;
 		cudaEventSynchronize(stop);
 		float sortTime ;
@@ -199,7 +206,7 @@ void cudaCubRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Ca
 
 		cudaEventRecord(start, 0) ;
 		// Read back new indices. /
-		cudaMemcpy(triIds.data(), gpuTriIds, sizeof(int)*triIds.size(), cudaMemcpyDeviceToHost) ;
+		cudaMemcpy(triIds.data(), gpuTriIdsOut, sizeof(int)*triIds.size(), cudaMemcpyDeviceToHost) ;
 		cudaEventRecord(stop, 0) ;
 		cudaEventSynchronize(stop);
 		float transferTime ;

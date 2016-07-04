@@ -14,7 +14,7 @@
  *       Revision:  none
  *       Compiler:  nvcc
  *
- *         Author:  Michael Tierney (MT), tiernemi@tcd.ie
+ *         Author:  
  *
  * =====================================================================================
  */

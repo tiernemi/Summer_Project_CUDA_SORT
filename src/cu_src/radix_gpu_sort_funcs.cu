@@ -99,7 +99,7 @@ void cudaRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Camer
 	dim3 distanceGrid(numTriangles/distanceBlock.x + (!(numTriangles%distanceBlock.x)?0:1)) ;
 
 	for (int i = 0 ; i < numCameras ; ++i) {
-		cudaCalcDistanceSq<<<distanceGrid,distanceBlock>>>(gpuTriCo, gpuCamCo+i, gpuDistancesSq, numTriangles, numCameras) ;
+		cudaCalcDistanceSq<<<distanceGrid,distanceBlock>>>(gpuTriCo, gpuCamCo+i, gpuDistancesSq, gpuTriIds, numTriangles, numCameras) ;
 		cudaRadixSortKernels(gpuDistancesSq,gpuTriIds,numTriangles,distanceBlock,distanceGrid) ;
 	}
 

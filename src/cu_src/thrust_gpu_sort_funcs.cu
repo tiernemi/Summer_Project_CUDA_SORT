@@ -126,10 +126,10 @@ void cudaThrustSortTriangles(std::vector<Triangle> & triangles, std::vector<Came
 		thrust::permutation_iterator<ZipIteratorTuple,DevVecIteratori> permIter(zipTriBegin,devTriIds.begin()) ;
 		thrust::transform(thrust::device, permIter, permIter+numTriangles, cam, devDists.begin(), calcDistance());
 		thrust::sort_by_key(thrust::device, devValPtr,devValPtr+numTriangles,devKeyPtr) ;
+		// GPU copy back to CPU. //
+		thrust::copy(devTriIds.begin(),devTriIds.end(),triIds.begin()) ;
 	}
 
-	// GPU copy back to CPU. //
-	thrust::copy(devTriIds.begin(),devTriIds.end(),triIds.begin()) ;
 
 	// CPU Overwrite triangles. //
 	std::vector<Triangle> temp = triangles ;

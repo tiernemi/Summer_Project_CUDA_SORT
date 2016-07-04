@@ -41,18 +41,23 @@
 void runBenchs(std::vector<Sort*> & sorts,
 		std::vector<Triangle> & triangles, std::vector<Camera> & camera, 
 		std::vector<std::vector<float>> & times, std::vector<std::vector<float>> & cpuPercentSorts) ;
+
 void runSortednessBenchs(std::vector<Sort*> & sorts, std::vector<Triangle> & triangles
 		, Camera & camera, std::vector<std::vector<float>> & times
 		, std::vector<std::vector<float>> & sortedness, std::mt19937 & gen) ;
+
 void outputTimeResultsCPU(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
 		std::vector<unsigned int> & numElements, std::vector<std::string> & filenames, 
 		std::vector<std::vector<std::vector<float>>> & cpuPercentSorts) ;
+
 void outputTimeResultsGPU(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
 		std::vector<unsigned int> & numElements, std::vector<std::string> & filenames, 
 		std::vector<std::vector<std::vector<float>>> & cpuPercentSorts) ;
+
 void outputSortednessResults(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
 		std::vector<unsigned int> & numElements, std::vector<std::string> & filenames, 
 		std::vector<std::vector<std::vector<float>>> & sortedness) ;
+
 void outputSpeedUpResults(std::vector<std::vector<std::vector<float>>> & times, std::vector<Sort*> & sorts, 
 		int id1, int id2, std::vector<unsigned int> & numElements, std::vector<std::string> & filenames, 
 		std::vector<std::vector<std::vector<float>>> & cpuPercentSorts) ;
@@ -90,6 +95,7 @@ int main(int argc, char *argv[]) {
 	// Declare GPU sorts. //
 	GPUSorts::ThrustGPUSort thrustSorter ;
 	GPUSorts::CubRadixGPUSort cubSorter ;
+	GPUSorts::BasicRadixGPUSort basicSorter ;
 	// Add sorts. //
 	cpuSorts.push_back(&stlSorter) ;
 	//sorts.push_back(&bubbleSorter) ;
@@ -99,6 +105,7 @@ int main(int argc, char *argv[]) {
 	cpuSorts.push_back(&radixSorterHybrid) ;
 	gpuSorts.push_back(&thrustSorter) ;
 	gpuSorts.push_back(&cubSorter) ;
+	gpuSorts.push_back(&basicSorter) ;
 
 	// Read in file names. //
 	for (int i = 1 ; i < argc ; ++i) {

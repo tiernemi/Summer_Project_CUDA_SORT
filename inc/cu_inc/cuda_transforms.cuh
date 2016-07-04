@@ -19,6 +19,6 @@
  */
 
 __global__ void cudaCalcDistanceSq(float * gpuTriCo, float * gpuCamCo, float * gpuDistancesSq, 
-		int numTriangles, int numCameras) ;
+		 int * gpuTriIds, int numTriangles, int numCameras) ;
 
 #endif /* end of header gaurd CUDA_TRANSFORMS_SUM_CU_T02OEQEL */
