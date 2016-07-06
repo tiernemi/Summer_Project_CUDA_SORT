@@ -96,6 +96,7 @@ int main(int argc, char *argv[]) {
 	GPUSorts::ThrustGPUSort thrustSorter ;
 	GPUSorts::CubRadixGPUSort cubSorter ;
 	GPUSorts::BasicRadixGPUSort basicSorter ;
+	GPUSorts::SharedRadixGPUSort sharedSorter ;
 	// Add sorts. //
 	cpuSorts.push_back(&stlSorter) ;
 	//sorts.push_back(&bubbleSorter) ;
@@ -106,6 +107,7 @@ int main(int argc, char *argv[]) {
 	gpuSorts.push_back(&thrustSorter) ;
 	gpuSorts.push_back(&cubSorter) ;
 	gpuSorts.push_back(&basicSorter) ;
+	gpuSorts.push_back(&sharedSorter) ;
 
 	// Read in file names. //
 	for (int i = 1 ; i < argc ; ++i) {

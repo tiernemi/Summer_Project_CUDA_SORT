@@ -1,13 +1,13 @@
 
-#ifndef PREFIX_SUM_CU_T02OEQEL
-#define PREFIX_SUM_CU_T02OEQEL
+#ifndef PREFIX_SUMS_CU_T02OEQEL
+#define PREFIX_SUMS_CU_T02OEQEL
 
 /*
  * =====================================================================================
  *
- *       Filename:  prefix_sum.cuh
+ *       Filename:  prefix_sums.cuh
  *
- *    Description:  Header file for prefix sum function used in radix sort.
+ *    Description:  Header file for prefix sum functions used in radix sort.
  *
  *        Version:  1.0
  *        Created:  07/06/16 17:22:08
@@ -19,6 +19,7 @@
  * =====================================================================================
  */
 
-__global__ void prefixSum(int * indices, int * globalValues, int * localPrefixSumArray, int * blockSumArray, int size, int bits) ;
+__global__ void calcExclusivePrefixSum(int * localSumArray,  int numElements) ;
+__global__ void calcInclusivePrefixSum(int * localSumArray,  int numElements) ;
 
 #endif /* end of header gaurd PREFIX_SUM_CU_T02OEQEL */

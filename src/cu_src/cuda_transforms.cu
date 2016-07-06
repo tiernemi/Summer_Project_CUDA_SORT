@@ -16,7 +16,7 @@
  */
 
 #include "../../inc/cu_inc/cuda_transforms.cuh"
-
+#include <stdio.h>
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  cudaCalcDistanceSq

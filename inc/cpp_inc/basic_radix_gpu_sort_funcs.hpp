@@ -9,7 +9,7 @@
  *    Description:  Header file for linking cuda radix sort with cpu code.
  *
  *        Version:  1.0
- *        Created:  2016-06-30 16:17
+ *        Created:  2016-07-05 14:34
  *       Revision:  none
  *       Compiler:  g++
  *
@@ -22,6 +22,7 @@
 #include "camera.hpp"
 
 void cudaBasicRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) ;
-void cudaBasicRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras, std::vector<float> & sortTimes) ;
+void cudaBasicRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras, 
+		std::vector<float> & sortTimes) ;
 
 #endif /* end of include guard: BASIC_RADIX_GPU_SORT_FUNCS_HPP_T02OEQEL */

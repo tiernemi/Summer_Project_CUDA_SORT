@@ -22,32 +22,36 @@ WVTEST_MAIN("Sorting tests")
 {
 	std::vector<Triangle> triangles ;
 	std::vector<Camera> cameras ;
-	std::string filename("/home/users/mschpc/2015/tiernemi/project/data/testDataP2.txt") ;
+	std::string filename("/home/users/mschpc/2015/tiernemi/project/data/TVS2_TransparentGeometryData_2016_06_21_00001.txt") ;
 	FileLoader::loadFile(triangles,cameras,filename) ;
 
-	std::vector<std::pair<int,float>> distances(triangles.size()) ;
-	// Convert to sortable form //
+
 	std::vector<Triangle> temp = triangles ;
+	std::vector<std::pair<int,float>> distances(triangles.size()) ;
+
+	/* 
+	// Convert to sortable form //
 	CPUSorts::STLSort stlSorter ;
-	Transforms::transformToDistVec(distances,triangles,cameras[0]) ;
 	stlSorter.sortTriangles(triangles,cameras) ;
 	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
-
+	*/
+	/*  
 	CPUSorts::BitonicSort bitonicSorter ;
 	bitonicSorter.sortTriangles(triangles,cameras) ;
 	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
 
-	/* 
+
 	CPUSorts::BubbleSort bubbleSorter ;
 	bubbleSorter.sortTriangles(triangles,cameras) ;
 	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
 	*/
+	/*  
 
 	CPUSorts::RadixSortPT radixSorterPT ;
 	radixSorterPT.sortTriangles(triangles,cameras) ;
@@ -73,12 +77,12 @@ WVTEST_MAIN("Sorting tests")
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
 
-	/*  
 	GPUSorts::RadixGPUSort radixGPUSorter ;
 	radixGPUSorter.sortTriangles(triangles,cameras) ;
 	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
+
 	*/
 
 	GPUSorts::CubRadixGPUSort cubSorter ;
@@ -87,12 +91,19 @@ WVTEST_MAIN("Sorting tests")
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
 
+	/* 
 	GPUSorts::BasicRadixGPUSort baseSorter ;
 	baseSorter.sortTriangles(triangles,cameras) ;
 	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
+	*/
 
+	GPUSorts::SharedRadixGPUSort shareSorter ;
+	shareSorter.sortTriangles(triangles,cameras) ;
+	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
+	WVPASSEQ(Tests::checkSorted(distances),1) ;
+	triangles = temp ;
 }
 
 

@@ -28,5 +28,6 @@
 #include "thrust_gpu_sort.hpp"
 #include "basic_radix_gpu_sort.hpp"
 #include "bubble_sort.hpp"
+#include "shared_radix_gpu_sort.hpp"
 
 #endif /* end of include guard:  */

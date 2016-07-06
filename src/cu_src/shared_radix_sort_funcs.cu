@@ -1,9 +1,9 @@
 /*
  * =====================================================================================
  *
- *       Filename:  radix_sort.cu
+ *       Filename:  shared_radix_gpu_sort.cu
  *
- *    Description:  CUDA code for basic global memory based radix sort on gpu.
+ *    Description:  CUDA code for shared memory based radix sort on gpu.
  *
  *        Version:  1.0
  *        Created:  07/06/16 16:33:20
@@ -19,14 +19,16 @@
 #include <cmath>
 #include <math.h>
 
-#include "../../inc/cpp_inc/basic_radix_gpu_sort_funcs.hpp"
+#include "../../inc/cpp_inc/shared_radix_gpu_sort_funcs.hpp"
 #include "../../inc/cu_inc/cuda_transforms.cuh"
 #include "../../inc/cu_inc/cuda_error.cuh"
 #include "../../inc/cu_inc/test_utils.cuh"
+#include "../../inc/cu_inc/prefix_sums.cuh"
 
 #define WARPSIZE 32
-#define NUMTHREADSDEC 256
-#define NUMTHREADSRED 256
+#define NUMTHREADSDEC 128
+#define NUMTHREADSRED 512
+#define NUMTHREADSBS 1024
 #define RADIXSIZE 4
 #define RADIXMASK 3
 
@@ -52,44 +54,88 @@ static __global__ void flagDecode(int * keys, int * digitFlags, const int numEle
 
 /* 
  * ===  FUNCTION  ======================================================================
- *         Name:  blockPrefixScan
- *    Arguments:  int * digitFlagsIn - Digit flags array used for reading.
- *                int * digitFlagsOut - Digit flags array used for writing. 
- *                int depth - Depth of the reduction
- *  Description:  Performs a block wide prefix sum step in a naive manner. Depth informs
- *                the current level of the recursion.
+ *         Name:  calcBlockSumArray
+ *    Arguments:  int * localSumArray - The array containing local unsummed values. (Per
+ *                block.
+ *                int * blockSumArray - The array containing the reduced sum of all the
+ *                per block values. Each element is for its corresponding block.
+ *                int numThreadsReq - The number of threads required to process array
+ *                globally.
+ *  Description:  Fused local prefix sum and global block sum array kernels.
  * =====================================================================================
  */
 
-static __global__ void blockPrefixScan(int * digitFlagsIn, int * digitFlagsOut, const int numElements, int depth) {
+__global__ void calcBlockSumArray(int * localSumArray, int * blockSumArray, int numThreadsReq) {
+
+	extern __shared__ int sharedSum[] ;
+
+	int threadID = threadIdx.x ;
 	int globalID = threadIdx.x + blockDim.x * blockIdx.x ;
-	if (globalID < depth) {
-		digitFlagsOut[globalID] = digitFlagsIn[globalID] ;
+	
+	// Load global data into shared memory. //
+	sharedSum[2*threadID] = localSumArray[2*globalID] ;
+	sharedSum[2*threadID+1] = localSumArray[2*globalID+1] ;
+
+	int offset = 1 ;
+
+	// Upsweep. //
+	for (int i = 2*blockDim.x>>1 ; i > 0 ; i >>= 1) {
+		__syncthreads() ;
+		if (threadID < i) {
+			int pos1 = offset*(2*threadID+1)-1 ;
+			int pos2 = offset*(2*threadID+2)-1 ;
+			sharedSum[pos2] += sharedSum[pos1] ;
+		}
+		offset *= 2 ;
 	}
-	else if (globalID < RADIXSIZE*numElements) {
-		digitFlagsOut[globalID] = digitFlagsIn[globalID-depth] + digitFlagsIn[globalID] ;
+
+	// Seed exclusive scan. //
+	if (threadID == 0) {
+		blockSumArray[blockIdx.x] = sharedSum[2*blockDim.x-1] ;
+		sharedSum[2*blockDim.x-1] = 0 ;
 	}
+
+	// Downsweep. //
+	for (int i = 1 ; i < 2*blockDim.x ; i *= 2) {
+		offset >>= 1 ;
+		__syncthreads() ;
+		if (threadID < i) {
+			int pos1 = offset*(2*threadID+1)-1 ;
+			int pos2 = offset*(2*threadID+2)-1 ;
+			int tempVal = sharedSum[pos1] ;
+			sharedSum[pos1] = sharedSum[pos2] ;
+			sharedSum[pos2] += tempVal ;
+		}
+	}
+
+	// Read back data to global memory. //
+	localSumArray[2*globalID] = sharedSum[2*threadID] ;
+	localSumArray[2*globalID+1] = sharedSum[2*threadID+1] ;
 }
+
 
 /* 
  * ===  FUNCTION  ======================================================================
- *         Name:  exclusiveSetup
- *    Arguments:  int * digitFlagsIn - Input digit flags.
- *                int * digitFlagsOut - Output digit flags.
- *                const int numElements - Number of keys.
- *  Description:  Seeds digitFlags with a left shift in order to generate an 
- *                exclusive scan.
+ *         Name:  updateLocalPrefixes
+ *    Arguments:  int * localSumArray - Array of local sums 
+ *                int * blockSumArray - Array containing the block offset.
+ *                int numElements - Number of elements in array.
+ *  Description:  Add corresponding block offset to each member of the block.
  * =====================================================================================
  */
 
-static __global__ void exclusiveSetup(int * digitFlagsIn, int * digitFlagsOut, const int numElements) {
+static void __global__ updateLocalPrefixes(int * localSumArray, int * blockSumArray, int numElements) {
+	int threadID = threadIdx.x ;
 	int globalID = threadIdx.x + blockDim.x * blockIdx.x ;
-	if (globalID < numElements*RADIXSIZE) {
-		if (globalID == 0) {
-			digitFlagsOut[globalID] = 0 ;
-		} else {
-			digitFlagsOut[globalID] = digitFlagsIn[globalID-1] ;
+	__shared__ int blockOffset ;
+
+	if (2*globalID < numElements) {
+		if (threadID == 0) {
+			blockOffset = blockSumArray[blockIdx.x] ;
 		}
+		__syncthreads() ;
+		localSumArray[2*globalID] += blockOffset ;
+		localSumArray[2*globalID+1] += blockOffset ;
 	}
 }
 
@@ -135,17 +181,28 @@ static __global__ void shuffle(int * keyPtrIn, int * keyPtrOut, int * valPtrIn, 
 static void sort(int * keys, int * values, const int numElements) {
 	dim3 blockDimensionsDecode(NUMTHREADSDEC) ;
 	dim3 gridDimensionsDecode(numElements/(blockDimensionsDecode.x) + 
-			(!(numElements%(blockDimensionsDecode.x))?0:1)) ;
+			((numElements%(blockDimensionsDecode.x))?1:0)) ;
 
-	dim3 blockDimensionsScan(NUMTHREADSRED) ;
-	dim3 gridDimensionsScan((RADIXSIZE*(numElements))/(blockDimensionsScan.x + 
-				(!(((RADIXSIZE*numElements))%(blockDimensionsScan.x))?0:1))) ;
+	dim3 blockDimensionsLocalScan(NUMTHREADSRED) ;
+	dim3 gridDimensionsLocalScan((RADIXSIZE*(numElements))/(blockDimensionsLocalScan.x*2) + 
+				((((RADIXSIZE*numElements))%(blockDimensionsLocalScan.x*2))?1:0)) ;
+
+
+	dim3 blockDimensionsPR(NUMTHREADSRED) ;
+	dim3 gridDimensionsPR((RADIXSIZE*(numElements))/(blockDimensionsPR.x) + 
+				((((RADIXSIZE*numElements))%(blockDimensionsPR.x))?1:0)) ;
+
+	dim3 blockDimensionsBlockScan(NUMTHREADSBS) ;
+	dim3 gridDimensionsBlockScan((gridDimensionsLocalScan.x)/(blockDimensionsBlockScan.x*2) + 
+				(((gridDimensionsLocalScan.x)%(blockDimensionsBlockScan.x*2))?1:0)) ;
 
 	// Allocate memory for prefix sum buffers. //
-	int * digitFlags1 = NULL ;
-	int * digitFlags2 = NULL ;
-	cudaMalloc((void**) &digitFlags1, sizeof(int)*numElements*RADIXSIZE) ;
-	cudaMalloc((void**) &digitFlags2, sizeof(int)*numElements*RADIXSIZE) ;
+	int * digitFlags = NULL ;
+	int * blockSumArray = NULL ; 
+	const int digitFlagSize = 2*(gridDimensionsLocalScan.x * blockDimensionsLocalScan.x) ;
+	const int blockSumArraySize = 2*(gridDimensionsBlockScan.x * blockDimensionsBlockScan.x) ; 
+	cudaMalloc((void**) &digitFlags, sizeof(int)*digitFlagSize) ;
+	cudaMalloc((void**) &blockSumArray, sizeof(int)*blockSumArraySize) ;
 
 	// Create buffer for keys and values. //
 	int * keyPtr1 = keys ;
@@ -155,21 +212,16 @@ static void sort(int * keys, int * values, const int numElements) {
 	cudaMalloc((void**) &keyPtr2, sizeof(int)*numElements) ;
 	cudaMalloc((void**) &valPtr2, sizeof(int)*numElements) ;
 
-	// Use a naive global implementation of Hillis and Steele algorithm. //
-	int highestPower2 = (1 << (int) (std::ceil(log2(float(numElements*RADIXSIZE))))) ;
 	for (int i = 0 ; i < 30 ; i+=2) {
-		cudaMemset(digitFlags1, 0, sizeof(int)*numElements*RADIXSIZE) ;
-		flagDecode<<<gridDimensionsDecode,blockDimensionsDecode>>>(keyPtr1, digitFlags1, numElements, i) ;
-		exclusiveSetup<<<gridDimensionsScan,blockDimensionsScan>>>(digitFlags1,digitFlags2,numElements) ;
-
-		// Perform "device synchronised" block wide prefix sum. //
-		for (int j = 1 ; j < highestPower2 ; j<<=1) {
-			blockPrefixScan<<<gridDimensionsScan, blockDimensionsScan>>>(digitFlags2,digitFlags1,numElements,j) ; 
-			cudaDeviceSynchronize() ;
-			std::swap(digitFlags2,digitFlags1) ;
-		}
+		cudaMemset(digitFlags, 0, sizeof(int)*digitFlagSize) ;
+		flagDecode<<<gridDimensionsDecode,blockDimensionsDecode>>>(keyPtr1, digitFlags, numElements, i) ;
+		calcBlockSumArray<<<gridDimensionsLocalScan,blockDimensionsLocalScan,blockDimensionsLocalScan.x*2*sizeof(int)>>>(digitFlags,
+				blockSumArray, digitFlagSize) ;
+		calcExclusivePrefixSum<<<gridDimensionsBlockScan, blockDimensionsBlockScan, blockDimensionsBlockScan.x*2*sizeof(int)>>>(
+				blockSumArray, gridDimensionsLocalScan.x) ;
+		updateLocalPrefixes<<<gridDimensionsLocalScan, blockDimensionsLocalScan>>>(digitFlags, blockSumArray, digitFlagSize) ;
 		// Shuffle data to new locations. //
-		shuffle<<<gridDimensionsDecode,blockDimensionsDecode>>>(keyPtr1,keyPtr2,valPtr1,valPtr2,digitFlags2,numElements,i) ;
+		shuffle<<<gridDimensionsDecode,blockDimensionsDecode>>>(keyPtr1,keyPtr2,valPtr1,valPtr2,digitFlags,numElements,i) ;
 		
 		std::swap(keyPtr1,keyPtr2) ;
 		std::swap(valPtr1,valPtr2) ;
@@ -189,8 +241,8 @@ static void sort(int * keys, int * values, const int numElements) {
 		cudaFree(keyPtr2) ;
 	}
 
-	cudaFree(digitFlags1) ;
-	cudaFree(digitFlags2) ;
+	cudaFree(digitFlags) ;
+	cudaFree(blockSumArray) ;
 }
 
 /* 
@@ -203,7 +255,7 @@ static void sort(int * keys, int * values, const int numElements) {
  * =====================================================================================
  */
 
-void cudaBasicRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
+void cudaSharedRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras) {
 	// Vectorise Triangle data. //
 	std::vector<float> triCo(3*triangles.size()) ;
 	std::vector<int> triIds(triangles.size()) ;
@@ -277,7 +329,7 @@ void cudaBasicRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<
  * =====================================================================================
  */
 
-void cudaBasicRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras, 
+void cudaSharedRadixSortTriangles(std::vector<Triangle> & triangles, std::vector<Camera> & cameras, 
 		std::vector<float> & times) {
 	// Timing. //
 	cudaEvent_t start, stop ;

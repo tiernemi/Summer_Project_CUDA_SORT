@@ -49,6 +49,7 @@ Triangle::Triangle(const Triangle & obj) {
 	coords[0] = objco[0] ; 
 	coords[1] = objco[1] ; 
 	coords[2] = objco[2] ; 
+	id = obj.id ;
 }		/* -----  end of member function Triangle  ----- */
 
 /* 
