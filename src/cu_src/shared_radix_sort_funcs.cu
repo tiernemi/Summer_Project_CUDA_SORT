@@ -26,8 +26,8 @@
 #include "../../inc/cu_inc/prefix_sums.cuh"
 
 #define WARPSIZE 32
-#define NUMTHREADSDEC 128
-#define NUMTHREADSRED 512
+#define NUMTHREADSDEC 256
+#define NUMTHREADSRED 64
 #define NUMTHREADSBS 1024
 #define RADIXSIZE 4
 #define RADIXMASK 3
