@@ -98,15 +98,15 @@ int main(int argc, char *argv[]) {
 	GPUSorts::BasicRadixGPUSort basicSorter ;
 	GPUSorts::SharedRadixGPUSort sharedSorter ;
 	// Add sorts. //
-	cpuSorts.push_back(&stlSorter) ;
+//	cpuSorts.push_back(&stlSorter) ;
 	//sorts.push_back(&bubbleSorter) ;
 	//sorts.push_back(&bitonicSorter) ;
 	cpuSorts.push_back(&radixSorterPT) ;
-	cpuSorts.push_back(&radixSorterHoff) ;
-	cpuSorts.push_back(&radixSorterHybrid) ;
+//	cpuSorts.push_back(&radixSorterHoff) ;
+//	cpuSorts.push_back(&radixSorterHybrid) ;
 	gpuSorts.push_back(&thrustSorter) ;
-	gpuSorts.push_back(&cubSorter) ;
-	gpuSorts.push_back(&basicSorter) ;
+//	gpuSorts.push_back(&cubSorter) ;
+//	gpuSorts.push_back(&basicSorter) ;
 	gpuSorts.push_back(&sharedSorter) ;
 
 	// Read in file names. //

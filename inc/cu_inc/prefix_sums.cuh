@@ -19,7 +19,7 @@
  * =====================================================================================
  */
 
-__global__ void calcExclusivePrefixSum(int * localSumArray,  int numElements) ;
-__global__ void calcInclusivePrefixSum(int * localSumArray,  int numElements) ;
+__global__ void calcExclusivePrefixSum(int * localSumArray) ;
+__global__ void calcInclusivePrefixSum(int * localSumArray) ;
 
 #endif /* end of header gaurd PREFIX_SUM_CU_T02OEQEL */

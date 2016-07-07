@@ -32,6 +32,12 @@
 #define RADIXSIZE 4
 #define RADIXMASK 3
 
+#define NUM_BANKS WARPSIZE/2
+#define LOG_NUM_BANKS 4
+
+#define CONFLICT_FREE_OFFSET(n) \
+	((n) >> NUM_BANKS + (n) >> (2 * LOG_NUM_BANKS))
+
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  flagDecode
@@ -65,52 +71,68 @@ static __global__ void flagDecode(int * keys, int * digitFlags, const int numEle
  * =====================================================================================
  */
 
-__global__ void calcBlockSumArray(int * localSumArray, int * blockSumArray, int numThreadsReq) {
+__global__ void calcBlockSumArray(int * localSumArray, int * blockSumArray) {
 
 	extern __shared__ int sharedSum[] ;
 
+	int n = 2*blockDim.x ;
+	int numThreads = blockDim.x ;
 	int threadID = threadIdx.x ;
-	int globalID = threadIdx.x + blockDim.x * blockIdx.x ;
-	
+	int globalID = threadIdx.x + n*blockIdx.x ;
+
+	// Position of data in shared memory. //
+	int pos1B = threadID ;   
+	int pos2B = threadID  + (numThreads) ;	
+	int bankOffset1 = CONFLICT_FREE_OFFSET(pos1B) ;
+	int bankOffset2 = CONFLICT_FREE_OFFSET(pos2B) ;
+
 	// Load global data into shared memory. //
-	sharedSum[2*threadID] = localSumArray[2*globalID] ;
-	sharedSum[2*threadID+1] = localSumArray[2*globalID+1] ;
+	sharedSum[pos1B+bankOffset1] = localSumArray[globalID] ;
+	sharedSum[pos2B+bankOffset2] = localSumArray[globalID+(numThreads)] ;
 
 	int offset = 1 ;
+	const int loc1 = 2*threadID+1 ;
+	const int loc2 = 2*threadID+2 ;
 
 	// Upsweep. //
-	for (int i = 2*blockDim.x>>1 ; i > 0 ; i >>= 1) {
+	for (int i = n>>1 ; i > 0 ; i >>= 1) {
 		__syncthreads() ;
 		if (threadID < i) {
-			int pos1 = offset*(2*threadID+1)-1 ;
-			int pos2 = offset*(2*threadID+2)-1 ;
+			int pos1 = offset*(loc1)-1 ;
+			int pos2 = offset*(loc2)-1 ;
+			pos1 += CONFLICT_FREE_OFFSET(pos1) ;
+			pos2 += CONFLICT_FREE_OFFSET(pos2) ;
 			sharedSum[pos2] += sharedSum[pos1] ;
 		}
 		offset *= 2 ;
 	}
 
+	__syncthreads() ;
 	// Seed exclusive scan. //
 	if (threadID == 0) {
-		blockSumArray[blockIdx.x] = sharedSum[2*blockDim.x-1] ;
-		sharedSum[2*blockDim.x-1] = 0 ;
+		blockSumArray[blockIdx.x] = sharedSum[n-1+CONFLICT_FREE_OFFSET(n-1)] ;
+		sharedSum[n-1+CONFLICT_FREE_OFFSET(n-1)] = 0 ;
 	}
 
 	// Downsweep. //
-	for (int i = 1 ; i < 2*blockDim.x ; i *= 2) {
+	for (int i = 1 ; i < n ; i *= 2) {
 		offset >>= 1 ;
 		__syncthreads() ;
 		if (threadID < i) {
-			int pos1 = offset*(2*threadID+1)-1 ;
-			int pos2 = offset*(2*threadID+2)-1 ;
+			int pos1 = offset*(loc1)-1 ;
+			int pos2 = offset*(loc2)-1 ;
+			pos1 += CONFLICT_FREE_OFFSET(pos1) ;
+			pos2 += CONFLICT_FREE_OFFSET(pos2) ;
 			int tempVal = sharedSum[pos1] ;
 			sharedSum[pos1] = sharedSum[pos2] ;
 			sharedSum[pos2] += tempVal ;
 		}
 	}
 
+	__syncthreads() ;
 	// Read back data to global memory. //
-	localSumArray[2*globalID] = sharedSum[2*threadID] ;
-	localSumArray[2*globalID+1] = sharedSum[2*threadID+1] ;
+	localSumArray[globalID] = sharedSum[pos1B+bankOffset1] ;
+	localSumArray[globalID+numThreads] = sharedSum[pos2B+bankOffset2] ;
 }
 
 
@@ -185,16 +207,16 @@ static void sort(int * keys, int * values, const int numElements) {
 
 	dim3 blockDimensionsLocalScan(NUMTHREADSRED) ;
 	dim3 gridDimensionsLocalScan((RADIXSIZE*(numElements))/(blockDimensionsLocalScan.x*2) + 
-				((((RADIXSIZE*numElements))%(blockDimensionsLocalScan.x*2))?1:0)) ;
+			((((RADIXSIZE*numElements))%(blockDimensionsLocalScan.x*2))?1:0)) ;
 
 
 	dim3 blockDimensionsPR(NUMTHREADSRED) ;
 	dim3 gridDimensionsPR((RADIXSIZE*(numElements))/(blockDimensionsPR.x) + 
-				((((RADIXSIZE*numElements))%(blockDimensionsPR.x))?1:0)) ;
+			((((RADIXSIZE*numElements))%(blockDimensionsPR.x))?1:0)) ;
 
 	dim3 blockDimensionsBlockScan(NUMTHREADSBS) ;
 	dim3 gridDimensionsBlockScan((gridDimensionsLocalScan.x)/(blockDimensionsBlockScan.x*2) + 
-				(((gridDimensionsLocalScan.x)%(blockDimensionsBlockScan.x*2))?1:0)) ;
+			(((gridDimensionsLocalScan.x)%(blockDimensionsBlockScan.x*2))?1:0)) ;
 
 	// Allocate memory for prefix sum buffers. //
 	int * digitFlags = NULL ;
@@ -215,14 +237,15 @@ static void sort(int * keys, int * values, const int numElements) {
 	for (int i = 0 ; i < 30 ; i+=2) {
 		cudaMemset(digitFlags, 0, sizeof(int)*digitFlagSize) ;
 		flagDecode<<<gridDimensionsDecode,blockDimensionsDecode>>>(keyPtr1, digitFlags, numElements, i) ;
-		calcBlockSumArray<<<gridDimensionsLocalScan,blockDimensionsLocalScan,blockDimensionsLocalScan.x*2*sizeof(int)>>>(digitFlags,
-				blockSumArray, digitFlagSize) ;
+		calcBlockSumArray<<<gridDimensionsLocalScan,blockDimensionsLocalScan,blockDimensionsLocalScan.x*2*sizeof(int)>>>
+			(digitFlags, blockSumArray) ;
 		calcExclusivePrefixSum<<<gridDimensionsBlockScan, blockDimensionsBlockScan, blockDimensionsBlockScan.x*2*sizeof(int)>>>(
-				blockSumArray, gridDimensionsLocalScan.x) ;
+				blockSumArray) ;
 		updateLocalPrefixes<<<gridDimensionsLocalScan, blockDimensionsLocalScan>>>(digitFlags, blockSumArray, digitFlagSize) ;
+		//printPrefixValues<<< gridDimensionsPR, blockDimensionsPR>>>(digitFlags+1024, 1024) ;
 		// Shuffle data to new locations. //
 		shuffle<<<gridDimensionsDecode,blockDimensionsDecode>>>(keyPtr1,keyPtr2,valPtr1,valPtr2,digitFlags,numElements,i) ;
-		
+		//checkSortedGlobal<<< gridDimensionsDecode, blockDimensionsDecode>>>(keyPtr2,numElements, i+2) ;
 		std::swap(keyPtr1,keyPtr2) ;
 		std::swap(valPtr1,valPtr2) ;
 	}
@@ -279,7 +302,7 @@ void cudaSharedRadixSortTriangles(std::vector<Triangle> & triangles, std::vector
 		camCo[i+cameras.size()] = coords[1] ;
 		camCo[i+2*cameras.size()] = coords[2] ;
 	}
-	
+
 	float * gpuTriCo = NULL ;
 	float * gpuCamCo = NULL ;
 	float * gpuDistancesSq = NULL ;
@@ -359,7 +382,7 @@ void cudaSharedRadixSortTriangles(std::vector<Triangle> & triangles, std::vector
 		camCo[i+cameras.size()] = coords[1] ;
 		camCo[i+2*cameras.size()] = coords[2] ;
 	}
-	
+
 	float * gpuTriCo = NULL ;
 	float * gpuCamCo = NULL ;
 	float * gpuDistancesSq = NULL ;
@@ -394,7 +417,7 @@ void cudaSharedRadixSortTriangles(std::vector<Triangle> & triangles, std::vector
 		cudaEventSynchronize(stop);
 		float sortTime ;
 		cudaEventElapsedTime(&sortTime , start, stop) ;
-		
+
 		// Read back new indices. //
 		cudaEventRecord(start, 0) ;
 		cudaMemcpy(triIds.data(), gpuTriIds, sizeof(int)*triIds.size(), cudaMemcpyDeviceToHost) ;

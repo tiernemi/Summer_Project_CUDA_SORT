@@ -20,7 +20,15 @@
 
 #include "../../inc/cu_inc/prefix_sums.cuh"
 
+#define WARPSIZE 32
 #define RADIXSIZE 4
+#define NUM_BANKS WARPSIZE/2
+#define LOG_NUM_BANKS 4
+
+#define CONFLICT_FREE_OFFSET(n) \
+	((n) >> NUM_BANKS + (n) >> (2 * LOG_NUM_BANKS))
+
+
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -32,53 +40,67 @@
  * =====================================================================================
  */
 
-__global__ void calcExclusivePrefixSum(int * localSumArray,  int numThreadsReq) {
+__global__ void calcExclusivePrefixSum(int * localSumArray) {
 
 	extern __shared__ int sharedSum[] ;
 
+	int n = 2*blockDim.x ;
+	int numThreads = blockDim.x ;
 	int threadID = threadIdx.x ;
-	int globalID = threadIdx.x + blockDim.x * blockIdx.x ;
+	int globalID = threadIdx.x + n*blockIdx.x ;
 
-		// Load global data into shared memory. //
-		sharedSum[2*threadID] = localSumArray[2*globalID] ;
-		sharedSum[2*threadID+1] = localSumArray[2*globalID+1] ;
+	// Position of data in shared memory. //
+	int pos1B = threadID ;   
+	int pos2B = threadID  + (numThreads) ;	
+	int bankOffset1 = CONFLICT_FREE_OFFSET(pos1B) ;
+	int bankOffset2 = CONFLICT_FREE_OFFSET(pos2B) ;
 
-		int offset = 1 ;
+	// Load global data into shared memory. //
+	sharedSum[pos1B+bankOffset1] = localSumArray[globalID] ;
+	sharedSum[pos2B+bankOffset2] = localSumArray[globalID+(numThreads)] ;
 
-		// Upsweep. //
-		for (int i = 2*blockDim.x>>1 ; i > 0 ; i >>= 1) {
-			__syncthreads() ;
-			if (threadID < i) {
-				int pos1 = offset*(2*threadID+1)-1 ;
-				int pos2 = offset*(2*threadID+2)-1 ;
-				sharedSum[pos2] += sharedSum[pos1] ;
-			}
-			offset *= 2 ;
-		}
+	int offset = 1 ;
+	const int loc1 = 2*threadID+1 ;
+	const int loc2 = 2*threadID+2 ;
 
-		// Seed exclusive scan. //
-		if (threadID == 0) {
-			sharedSum[2*blockDim.x-1] = 0 ;
-		}
-
-		// Downsweep. //
-		for (int i = 1 ; i < 2*blockDim.x ; i *= 2) {
-			offset >>= 1 ;
-			__syncthreads() ;
-			if (threadID < i) {
-				int pos1 = offset*(2*threadID+1)-1 ;
-				int pos2 = offset*(2*threadID+2)-1 ;
-				int tempVal = sharedSum[pos1] ;
-				sharedSum[pos1] = sharedSum[pos2] ;
-				sharedSum[pos2] += tempVal ;
-			}
-		}
+	// Upsweep. //
+	for (int i = n>>1 ; i > 0 ; i >>= 1) {
 		__syncthreads() ;
+		if (threadID < i) {
+			int pos1 = offset*(loc1)-1 ;
+			int pos2 = offset*(loc2)-1 ;
+			pos1 += CONFLICT_FREE_OFFSET(pos1) ;
+			pos2 += CONFLICT_FREE_OFFSET(pos2) ;
+			sharedSum[pos2] += sharedSum[pos1] ;
+		}
+		offset *= 2 ;
+	}
 
-		// Read back data to global memory. //
-		localSumArray[2*globalID] = sharedSum[2*threadID] ;
-		localSumArray[2*globalID+1] = sharedSum[2*threadID+1] ;
+	__syncthreads() ;
+	// Seed exclusive scan. //
+	if (threadID == 0) {
+		sharedSum[n-1+CONFLICT_FREE_OFFSET(n-1)] = 0 ;
+	}
 
+	// Downsweep. //
+	for (int i = 1 ; i < n ; i *= 2) {
+		offset >>= 1 ;
+		__syncthreads() ;
+		if (threadID < i) {
+			int pos1 = offset*(loc1)-1 ;
+			int pos2 = offset*(loc2)-1 ;
+			pos1 += CONFLICT_FREE_OFFSET(pos1) ;
+			pos2 += CONFLICT_FREE_OFFSET(pos2) ;
+			int tempVal = sharedSum[pos1] ;
+			sharedSum[pos1] = sharedSum[pos2] ;
+			sharedSum[pos2] += tempVal ;
+		}
+	}
+
+	__syncthreads() ;
+	// Read back data to global memory. //
+	localSumArray[globalID] = sharedSum[pos1B+bankOffset1] ;
+	localSumArray[globalID+numThreads] = sharedSum[pos2B+bankOffset2] ;
 }
 
 /* 
@@ -91,48 +113,61 @@ __global__ void calcExclusivePrefixSum(int * localSumArray,  int numThreadsReq) 
  * =====================================================================================
  */
 
-__global__ void calcInclusivePrefixSum(int * localSumArray,  int numThreadsReq) {
+__global__ void calcInclusivePrefixSum(int * localSumArray) {
 
-	extern __shared__ int sharedSum[] ;
+		extern __shared__ int sharedSum[] ;
 
+	int n = 2*blockDim.x ;
+	int numThreads = blockDim.x ;
 	int threadID = threadIdx.x ;
-	int globalID = threadIdx.x + blockDim.x * blockIdx.x ;
-	
-	if (globalID < numThreadsReq) {
+	int globalID = threadIdx.x + n*blockIdx.x ;
 
-		// Load global data into shared memory. //
-		sharedSum[2*threadID] = localSumArray[2*globalID] ;
-		sharedSum[2*threadID+1] = localSumArray[2*globalID+1] ;
+	// Position of data in shared memory. //
+	int pos1B = threadID ;   
+	int pos2B = threadID  + (numThreads) ;	
+	int bankOffset1 = CONFLICT_FREE_OFFSET(pos1B) ;
+	int bankOffset2 = CONFLICT_FREE_OFFSET(pos2B) ;
 
-		int offset = 1 ;
+	// Load global data into shared memory. //
+	sharedSum[pos1B+bankOffset1] = localSumArray[globalID] ;
+	sharedSum[pos2B+bankOffset2] = localSumArray[globalID+(numThreads)] ;
 
-		// Upsweep. //
-		for (int i = 2*blockDim.x>>1 ; i > 0 ; i >>= 1) {
-			__syncthreads() ;
-			if (threadID < i) {
-				int pos1 = offset*(2*threadID+1)-1 ;
-				int pos2 = offset*(2*threadID+2)-1 ;
-				sharedSum[pos2] += sharedSum[pos1] ;
-			}
-			offset *= 2 ;
-		}
+	int offset = 1 ;
+	const int loc1 = 2*threadID+1 ;
+	const int loc2 = 2*threadID+2 ;
 
-		// Downsweep. //
-		for (int i = 1 ; i < 2*blockDim.x ; i *= 2) {
-			offset >>= 1 ;
-			__syncthreads() ;
-			if (threadID < i) {
-				int pos1 = offset*(2*threadID+1)-1 ;
-				int pos2 = offset*(2*threadID+2)-1 ;
-				int tempVal = sharedSum[pos1] ;
-				sharedSum[pos1] = sharedSum[pos2] ;
-				sharedSum[pos2] += tempVal ;
-			}
-		}
+	// Upsweep. //
+	for (int i = n>>1 ; i > 0 ; i >>= 1) {
 		__syncthreads() ;
-
-		// Read back data to global memory. //
-		localSumArray[2*globalID] = sharedSum[2*threadID] ;
-		localSumArray[2*globalID+1] = sharedSum[2*threadID+1] ;
+		if (threadID < i) {
+			int pos1 = offset*(loc1)-1 ;
+			int pos2 = offset*(loc2)-1 ;
+			pos1 += CONFLICT_FREE_OFFSET(pos1) ;
+			pos2 += CONFLICT_FREE_OFFSET(pos2) ;
+			sharedSum[pos2] += sharedSum[pos1] ;
+		}
+		offset *= 2 ;
 	}
+
+	__syncthreads() ;
+
+	// Downsweep. //
+	for (int i = 1 ; i < n ; i *= 2) {
+		offset >>= 1 ;
+		__syncthreads() ;
+		if (threadID < i) {
+			int pos1 = offset*(loc1)-1 ;
+			int pos2 = offset*(loc2)-1 ;
+			pos1 += CONFLICT_FREE_OFFSET(pos1) ;
+			pos2 += CONFLICT_FREE_OFFSET(pos2) ;
+			int tempVal = sharedSum[pos1] ;
+			sharedSum[pos1] = sharedSum[pos2] ;
+			sharedSum[pos2] += tempVal ;
+		}
+	}
+
+	__syncthreads() ;
+	// Read back data to global memory. //
+	localSumArray[globalID] = sharedSum[pos1B+bankOffset1] ;
+	localSumArray[globalID+numThreads] = sharedSum[pos2B+bankOffset2] ;
 }
