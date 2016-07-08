@@ -26,17 +26,118 @@
 #include "../../inc/cu_inc/prefix_sums.cuh"
 
 #define WARPSIZE 32
-#define NUMTHREADSDEC 128
-#define NUMTHREADSRED 512
+#define WARPSIZE_MIN_1 31
+#define NUMTHREADSDEC 256
+#define NUMTHREADSRED 256
 #define NUMTHREADSBS 1024
 #define RADIXSIZE 4
 #define RADIXMASK 3
 
 #define NUM_BANKS WARPSIZE/2
+
 #define LOG_NUM_BANKS 4
 
 #define CONFLICT_FREE_OFFSET(n) \
 	((n) >> NUM_BANKS + (n) >> (2 * LOG_NUM_BANKS))
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  intraWarpScan
+ *    Arguments:  int * digitFlags - Array storing the digit flags.
+ *  Description:  Performs a prefix scan using warp shuffles. This has the benefit of
+ *                not requiring thread synchronisation. Unrolled for RADIXSIZE of 4.
+ *                Taken from paper on light prefix sum.
+ * =====================================================================================
+ */
+
+static __global__ void intraWarpScan(int * digitFlags, int * blockSumArray) {
+	int laneID = threadIdx.x & WARPSIZE_MIN_1 ;
+	int threadID = threadIdx.x ;
+	int warpID = threadID/WARPSIZE ;
+	int offset = blockIdx.x*blockDim.x*4 + warpID*WARPSIZE*4 ;
+
+	int localVal1 = digitFlags[offset+laneID] ;
+	int localVal2 = digitFlags[offset+laneID+32] ;
+	int localVal3 = digitFlags[offset+laneID+64] ;
+	int localVal4 = digitFlags[offset+laneID+96] ;
+
+
+	#pragma unroll
+	for (int i = 1 ; i <= WARPSIZE ; i <<= 1) {
+		int temp = __shfl_up(localVal1,i) ;
+		if (laneID >= i) {
+			localVal1 += temp ;
+		}
+	}
+
+	#pragma unroll
+	for (int i = 1 ; i <= WARPSIZE ; i <<= 1) {
+		int temp = __shfl_up(localVal2,i) ;
+		if (laneID >= i) {
+			localVal2 += temp ;
+		}
+	}
+
+	#pragma unroll
+	for (int i = 1 ; i <= WARPSIZE ; i <<= 1) {
+		int temp = __shfl_up(localVal3,i) ;
+		if (laneID >= i) {
+			localVal3 += temp ;
+		}
+	}
+
+	#pragma unroll
+	for (int i = 1 ; i <= WARPSIZE ; i <<= 1) {
+		int temp = __shfl_up(localVal4,i) ;
+		if (laneID >= i) {
+			localVal4 += temp ;
+		}
+	}
+
+	localVal2 += __shfl(localVal1,WARPSIZE_MIN_1) ;
+	localVal3 += __shfl(localVal2,WARPSIZE_MIN_1) ;
+	localVal4 += __shfl(localVal3,WARPSIZE_MIN_1) ;
+
+	extern __shared__ int warpReduceVals[] ;
+
+	if (laneID == WARPSIZE_MIN_1) {
+		warpReduceVals[warpID] = localVal4 ;
+	}
+	__syncthreads() ;
+
+	int temp1 = 0 ;
+	if (warpID == 0) {
+		if (laneID < blockDim.x/WARPSIZE) {
+			temp1 = warpReduceVals[laneID] ;
+			#pragma unroll
+			for (int i = 1 ; i <= blockDim.x/WARPSIZE ; i<<=1) {
+				int temp2 = __shfl_up(temp1,i) ;
+				if (laneID >= i) {
+					temp1 += temp2 ;
+				}
+			}
+			warpReduceVals[laneID] = temp1 ;
+		}
+	}
+	__syncthreads() ;
+
+	temp1 = warpID == 0 ? 0 : warpReduceVals[warpID-1] ;
+
+	localVal1 += temp1 ;
+	localVal2 += temp1 ;
+	localVal3 += temp1 ;
+	localVal4 += temp1 ;
+
+	if (threadIdx.x == blockDim.x-1) {
+		blockSumArray[blockIdx.x] = localVal4 ;
+	}
+
+	digitFlags[offset+laneID] = localVal1 ;
+	digitFlags[offset+32+laneID] = localVal2 ;
+	digitFlags[offset+64+laneID] = localVal3 ;
+	digitFlags[offset+96+laneID] = localVal4 ;
+}		/* -----  end of function intraWarpScan  ----- */
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -135,7 +236,6 @@ __global__ void calcBlockSumArray(int * localSumArray, int * blockSumArray) {
 	localSumArray[globalID+numThreads] = sharedSum[pos2B+bankOffset2] ;
 }
 
-
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  updateLocalPrefixes
@@ -151,15 +251,30 @@ static void __global__ updateLocalPrefixes(int * localSumArray, int * blockSumAr
 	int globalID = threadIdx.x + blockDim.x * blockIdx.x ;
 	__shared__ int blockOffset ;
 
-	if (2*globalID < numElements) {
+	if (4*globalID < numElements) {
 		if (threadID == 0) {
 			blockOffset = blockSumArray[blockIdx.x] ;
 		}
 		__syncthreads() ;
-		localSumArray[2*globalID] += blockOffset ;
-		localSumArray[2*globalID+1] += blockOffset ;
+		localSumArray[4*globalID] += blockOffset ;
+		localSumArray[4*globalID+1] += blockOffset ;
+		localSumArray[4*globalID+2] += blockOffset ;
+		localSumArray[4*globalID+3] += blockOffset ;
 	}
 }
+
+
+/*
+static __global__ void shiftArrayRight(int * digitFlagsIn, int * digitFlagsOut, int numElements) {
+	int globalID = threadIdx.x + blockDim.x * blockIdx.x ;
+	if (globalID < numElements) {
+		if (globalID == 0) {
+			digitFlagsOut[globalID] = 0 ;
+		} else {
+			digitFlagsOut[globalID] = digitFlagsIn[globalID-1] ;
+		}
+	}
+} */
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -184,9 +299,15 @@ static __global__ void shuffle(int * keyPtrIn, int * keyPtrOut, int * valPtrIn, 
 		// Decode digit. //
 		int digitVal = (key >> bitOffset) & (RADIXMASK) ;
 		// Calculate write location //
-		int location = digitFlags[numElements*digitVal+globalID] ;
-		keyPtrOut[location] = key ;
-		valPtrOut[location] = valPtrIn[globalID] ;
+		int indexLoc = numElements*digitVal+globalID-1 ;
+		int writeLoc = 0 ;
+		if (indexLoc == -1) {
+			writeLoc = 0 ;
+		} else {
+			writeLoc = digitFlags[indexLoc] ;
+		}
+		keyPtrOut[writeLoc] = keyPtrIn[globalID] ;
+		valPtrOut[writeLoc] = valPtrIn[globalID] ;
 	}
 }
 
@@ -201,13 +322,15 @@ static __global__ void shuffle(int * keyPtrIn, int * keyPtrOut, int * valPtrIn, 
  */
 
 static void sort(int * keys, int * values, const int numElements) {
+
 	dim3 blockDimensionsDecode(NUMTHREADSDEC) ;
 	dim3 gridDimensionsDecode(numElements/(blockDimensionsDecode.x) + 
 			((numElements%(blockDimensionsDecode.x))?1:0)) ;
 
+
 	dim3 blockDimensionsLocalScan(NUMTHREADSRED) ;
-	dim3 gridDimensionsLocalScan((RADIXSIZE*(numElements))/(blockDimensionsLocalScan.x*2) + 
-			((((RADIXSIZE*numElements))%(blockDimensionsLocalScan.x*2))?1:0)) ;
+	dim3 gridDimensionsLocalScan((numElements)/(blockDimensionsLocalScan.x) + 
+			((((numElements))%(blockDimensionsLocalScan.x))?1:0)) ;
 
 
 	dim3 blockDimensionsPR(NUMTHREADSRED) ;
@@ -218,11 +341,20 @@ static void sort(int * keys, int * values, const int numElements) {
 	dim3 gridDimensionsBlockScan((gridDimensionsLocalScan.x)/(blockDimensionsBlockScan.x*2) + 
 			(((gridDimensionsLocalScan.x)%(blockDimensionsBlockScan.x*2))?1:0)) ;
 
+	printf("%d\n", gridDimensionsLocalScan.x);
+
+	const int digitFlagSize = 4*(gridDimensionsLocalScan.x * blockDimensionsLocalScan.x) ;
+
+	dim3 blockDimensionsShift(NUMTHREADSDEC) ;
+	dim3 gridDimensionsShift(digitFlagSize/(blockDimensionsShift.x) + 
+			((digitFlagSize%(blockDimensionsShift.x))?1:0)) ;
+
+
+	const int blockSumArraySize = 2*(gridDimensionsBlockScan.x * blockDimensionsBlockScan.x) ; 
+
 	// Allocate memory for prefix sum buffers. //
 	int * digitFlags = NULL ;
 	int * blockSumArray = NULL ; 
-	const int digitFlagSize = 2*(gridDimensionsLocalScan.x * blockDimensionsLocalScan.x) ;
-	const int blockSumArraySize = 2*(gridDimensionsBlockScan.x * blockDimensionsBlockScan.x) ; 
 	cudaMalloc((void**) &digitFlags, sizeof(int)*digitFlagSize) ;
 	cudaMalloc((void**) &blockSumArray, sizeof(int)*blockSumArraySize) ;
 
@@ -237,12 +369,12 @@ static void sort(int * keys, int * values, const int numElements) {
 	for (int i = 0 ; i < 30 ; i+=2) {
 		cudaMemset(digitFlags, 0, sizeof(int)*digitFlagSize) ;
 		flagDecode<<<gridDimensionsDecode,blockDimensionsDecode>>>(keyPtr1, digitFlags, numElements, i) ;
-		calcBlockSumArray<<<gridDimensionsLocalScan,blockDimensionsLocalScan,blockDimensionsLocalScan.x*2*sizeof(int)>>>
-			(digitFlags, blockSumArray) ;
+
+		intraWarpScan<<<gridDimensionsLocalScan,blockDimensionsLocalScan,WARPSIZE*sizeof(int)>>>(digitFlags,blockSumArray) ;
 		calcExclusivePrefixSum<<<gridDimensionsBlockScan, blockDimensionsBlockScan, blockDimensionsBlockScan.x*2*sizeof(int)>>>(
 				blockSumArray) ;
 		updateLocalPrefixes<<<gridDimensionsLocalScan, blockDimensionsLocalScan>>>(digitFlags, blockSumArray, digitFlagSize) ;
-		//printPrefixValues<<< gridDimensionsPR, blockDimensionsPR>>>(digitFlags+1024, 1024) ;
+		//printPrefixValues<<<gridDimensionsPR, blockDimensionsPR>>>(blockSumArray, 100) ;
 		// Shuffle data to new locations. //
 		shuffle<<<gridDimensionsDecode,blockDimensionsDecode>>>(keyPtr1,keyPtr2,valPtr1,valPtr2,digitFlags,numElements,i) ;
 		//checkSortedGlobal<<< gridDimensionsDecode, blockDimensionsDecode>>>(keyPtr2,numElements, i+2) ;
