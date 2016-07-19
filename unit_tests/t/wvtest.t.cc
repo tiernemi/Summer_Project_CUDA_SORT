@@ -22,7 +22,7 @@ WVTEST_MAIN("Sorting tests")
 {
 	std::vector<Triangle> triangles ;
 	std::vector<Camera> cameras ;
-	std::string filename("/home/users/mschpc/2015/tiernemi/project/data/TVS2_TransparentGeometryData_2016_06_21_00001.txt") ;
+	std::string filename("/home/users/mschpc/2015/tiernemi/project/data/128data.txt") ;
 	FileLoader::loadFile(triangles,cameras,filename) ;
 
 
@@ -104,6 +104,13 @@ WVTEST_MAIN("Sorting tests")
 	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
+
+	GPUSorts::MerrelRadixGPUSort merSorter ;
+	merSorter.sortTriangles(triangles,cameras) ;
+	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
+	WVPASSEQ(Tests::checkSorted(distances),1) ;
+	triangles = temp ;
+
 }
 
 
