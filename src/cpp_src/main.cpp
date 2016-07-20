@@ -52,8 +52,8 @@ int main(int argc, char *argv[]) {
 	std::vector<Camera> cameras ;
 	FileLoader::loadFile(triangles,cameras,filename.getValue()) ;
 
-	GPUSorts::SharedRadixGPUSort shareSorter ;
-	shareSorter.sortTriangles(triangles,cameras[0]) ; 
+	GPUSorts::MerrelRadixGPUSort merSorter ;
+	merSorter.sortTriangles(triangles,cameras[0]) ; 
 
 	return EXIT_SUCCESS ;
 }
