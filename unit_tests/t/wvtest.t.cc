@@ -22,7 +22,7 @@ WVTEST_MAIN("Sorting tests")
 {
 	std::vector<Triangle> triangles ;
 	std::vector<Camera> cameras ;
-	std::string filename("/home/users/mschpc/2015/tiernemi/project/data/512data.txt") ;
+	std::string filename("/home/users/mschpc/2015/tiernemi/project/data/testDataP2.txt") ;
 	FileLoader::loadFile(triangles,cameras,filename) ;
 
 
