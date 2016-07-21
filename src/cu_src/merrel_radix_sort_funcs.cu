@@ -31,10 +31,9 @@
 #define RADIXSIZE 4
 #define RADIXMASK 3
 
-#define NUM_BLOCKS 128
+#define NUM_BLOCKS 256
 #define NUM_THREADS_PER_BLOCK 1024
-#define NUM_KEYS_PER_THREAD 1
-#define NUM_TILES_PER_BLOCK 4
+#define NUM_TILES_PER_BLOCK 2
 
 #define NUM_THREADS_REDUCE NUM_BLOCKS
 
@@ -248,8 +247,6 @@ static __global__ void downsweepScan(int * keysIn, int * keysOut, int * valuesIn
 		if (threadIdx.x < RADIXSIZE) {
 			seedValues[threadIdx.x] += digitTotals[threadIdx.x] ;
 		}
-
-		__syncthreads() ;
 
 		globalOffset += NUM_THREADS_PER_BLOCK ;
 
