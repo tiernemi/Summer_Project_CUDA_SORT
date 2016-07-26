@@ -181,6 +181,19 @@ static __global__ void downsweepScan(int * keysIn, int * keysOut, int * valuesIn
 		seedValues[localOffset] = reduceArray[localOffset*NUM_BLOCKS+blockIdx.x] ;
 	}
 
+	__syncthreads() ;
+
+	// Early exit. //
+	#pragma unroll
+	for (int i = 0 ; i < RADIXSIZE-1 ; ++i) {
+		if (seedValues[i+1] - seedValues[i] + blockOffset == numElements) {
+			return ;
+		}
+	}
+	if (seedValues[RADIXSIZE-1] - blockOffset == 0) {
+		return ;
+	}
+
 	// Process each tile sequentially. //
 	#pragma unroll
 	for (int k = 0 ; k < NUM_TILES_PER_BLOCK ; ++k) {
@@ -394,10 +407,13 @@ static __global__ void intraWarpScan(int * input, int * output) {
 	localVal3 += temp1 ;
 	localVal4 += temp1 ;
 
+
+
 	output[offset+laneID] = localVal1 ;
 	output[offset+32+laneID] = localVal2 ;
 	output[offset+64+laneID] = localVal3 ;
 	output[offset+96+laneID] = localVal4 ;
+
 }		/* -----  end of function intraWarpScan  ----- */
 
 static __global__ void printTopArray(int * topArray, int size) {
