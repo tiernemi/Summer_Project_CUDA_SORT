@@ -29,6 +29,7 @@
 #include "../../inc/cpp_inc/camera.hpp"
 #include "../../inc/cpp_inc/test_funcs.hpp"
 #include "../../inc/cpp_inc/sort_algs.hpp"
+#include "../../inc/cpp_inc/clock.hpp"
 
 // Options //
 CFlag verbose("verbose",false,"v") ;
@@ -51,9 +52,21 @@ int main(int argc, char *argv[]) {
 	std::vector<Triangle> triangles ;
 	std::vector<Camera> cameras ;
 	FileLoader::loadFile(triangles,cameras,filename.getValue()) ;
+	std::vector<Triangle> temp = triangles ;
 
 	GPUSorts::MerrelRadixGPUSort merSorter ;
-	merSorter.sortTriangles(triangles,cameras[0]) ; 
+	//GPUSorts::ThrustGPUSort tSorter ;
+
+	Clock myClock ;
+	myClock.start() ;
+	merSorter.sortTriangles(temp,cameras[0]) ; 
+	myClock.stop() ;
+	std::cout << myClock.getDuration() << std::endl;
+	temp = triangles ;
+	myClock.start() ;
+	//tSorter.sortTriangles(temp,cameras[0]) ; 
+	myClock.stop() ;
+	std::cout << myClock.getDuration() << std::endl;
 
 	return EXIT_SUCCESS ;
 }
