@@ -31,17 +31,44 @@
 #define RADIXSIZE 4
 #define RADIXMASK 3
 
+
 #define NUM_BLOCKS 512
-#define NUM_THREADS_PER_BLOCK 256
-#define NUM_TILES_PER_BLOCK 4
-#define VEC_LOAD_SIZE 4
+#define NUM_THREADS_PER_BLOCK 128
+#define NUM_TILES_PER_BLOCK 8
+
+#define PARA_BIT_SIZE 8
+#define NUM_BIT_PARTITIONS 32/PARA_BIT_SIZE
+#define SUB_TILE_SIZE 1 << PARA_BIT_SIZE
+#define NUM_SUB_TILES NUM_THREADS_PER_BLOCK/SUB_TILE_SIZE
+#define PARA_BIT_MASK_0 (1 << PARA_BIT_SIZE)-1
+#define PARA_BIT_MASK_1 PARA_BIT_MASK_0 << PARA_BIT_SIZE
+#define PARA_BIT_MASK_2 PARA_BIT_MASK_1 << PARA_BIT_SIZE
+#define PARA_BIT_MASK_3 PARA_BIT_MASK_2 << PARA_BIT_SIZE
+
+typedef union {
+	int4 vec ;
+	int a[4] ;
+} U4 ;
+
+typedef union {
+	int2 vec ;
+	int a[2] ;
+} U2 ;
+
 
 #define NUM_THREADS_REDUCE NUM_BLOCKS
 
+static __device__ inline void printBinary(int num) {
+	int mask = 1 ;
+	for (int i = 0 ; i < sizeof(num)*8 ; ++i) {
+		printf("%d", (num>>(31-i) & mask)) ;
+	}
+	printf("\n");
+}
 
 static __global__ void upsweepReduce(int * keys, int * reduceArray, int numElements, int digitPos) {
 	// Declarations. //
-	__shared__ int sharedNumFlags[(RADIXSIZE*NUM_THREADS_PER_BLOCK)/WARPSIZE] ;
+	__shared__ int sharedNumFlags[NUM_THREADS_PER_BLOCK/WARPSIZE] ;
 
 	// Get IDs. //
 	int warpID  = threadIdx.x / WARPSIZE ;
@@ -50,70 +77,49 @@ static __global__ void upsweepReduce(int * keys, int * reduceArray, int numEleme
 	int blockOffset = (NUM_THREADS_PER_BLOCK * blockIdx.x) * NUM_TILES_PER_BLOCK ;
 	int globalOffset = blockOffset + threadIdx.x ;
 	// Allocate array containing flag reductions. //
-	int numFlags[RADIXSIZE] ;
+	int numFlags ;
 
 	if (threadIdx.x < RADIXSIZE) {
 		tileTotal[threadIdx.x] = 0 ;
 	}
 	
+	#pragma unroll
 	for (int k = 0 ; k < NUM_TILES_PER_BLOCK ; ++k) {
-
-		#pragma unroll
-		for (int i = 0 ; i < RADIXSIZE ; ++i) {
-			numFlags[i] = 0 ;
-		}
+		numFlags = 1 ;
 		// Decode keys. //
-		if ((globalOffset) < numElements) { 
+		if ((globalOffset) < numElements) {
 			int digit = (keys[globalOffset]>>digitPos) & RADIXMASK ;
-			if (digit == 0)
-				numFlags[0] = 1 ;
-			else if (digit == 1) 
-				numFlags[1] = 1 ;
-			else if (digit == 2)
-				numFlags[2] = 1 ;
-			else if (digit == 3)
-				numFlags[3] = 1;
+			numFlags <<= PARA_BIT_SIZE*digit ;
 		}
 
 		__syncthreads() ;
-			// Warp level reduction. //
+		// Warp level reduction. //
+		#pragma unroll
+		for (int j = WARPSIZE_HALF ; j > 0 ; j>>=1) {
+			numFlags += __shfl_down(numFlags,j) ;
+		}
+		if (laneID == 0) {
+			sharedNumFlags[warpID] = numFlags ;
+		}
+		__syncthreads() ;
+
+		// Get data into first warp. //
+		numFlags = (threadIdx.x < NUM_THREADS_PER_BLOCK/WARPSIZE) ? 
+		sharedNumFlags[laneID] : 0 ;
+		// Final warp reduction. //
+		if (warpID == 0) {
 			#pragma unroll
 			for (int j = WARPSIZE_HALF ; j > 0 ; j>>=1) {
+				numFlags += __shfl_down(numFlags,j) ;
+			}
+			if (threadIdx.x == 0) {
 				#pragma unroll
 				for (int i = 0 ; i < RADIXSIZE ; ++i) {
-					numFlags[i] += __shfl_down(numFlags[i],j) ;
+					tileTotal[i] = (numFlags >> (i*PARA_BIT_SIZE) & PARA_BIT_MASK_0) ;
 				}
 			}
-
-			if (laneID == 0) {
-				#pragma unroll
-				for (int i = 0 ; i < RADIXSIZE ; ++i) {
-					sharedNumFlags[i*(NUM_THREADS_PER_BLOCK/WARPSIZE)+warpID] = numFlags[i] ;
-				}
-			}
-			__syncthreads() ;
-			// Get data into first warp. //
-				#pragma unroll
-			for (int i = 0 ; i < RADIXSIZE ; ++i) {
-				numFlags[i] = (threadIdx.x < NUM_THREADS_PER_BLOCK/ WARPSIZE) ? 
-					sharedNumFlags[i*(NUM_THREADS_PER_BLOCK/WARPSIZE)+ laneID] : 0 ;
-			}
-			// Final warp reduction. //
-			if (warpID == 0) {
-				#pragma unroll
-				for (int j = WARPSIZE_HALF ; j > 0 ; j>>=1) {
-					for (int i = 0 ; i < RADIXSIZE ; ++i) {
-						numFlags[i] += __shfl_down(numFlags[i],j) ;
-					}
-				}
-				if (threadIdx.x == 0) {
-				#pragma unroll
-					for (int i = 0 ; i < RADIXSIZE ; ++i) {
-						tileTotal[i] += numFlags[i] ;
-					}
-				}
-			}
-			__syncthreads() ;
+		}
+		__syncthreads() ;
 
 		globalOffset += NUM_THREADS_PER_BLOCK ;
 	}
@@ -157,7 +163,7 @@ __device__ inline int warpExPrefixSum(int localVal, int laneID, int numThreads) 
 
 static __global__ void downsweepScan(int * keysIn, int * keysOut, int * valuesIn, int * valuesOut, int * reduceArray, int numElements, int digitPos) {
 	// Declarations. //
-	__shared__ int warpReduceVals[(RADIXSIZE*NUM_THREADS_PER_BLOCK)/WARPSIZE] ;
+	__shared__ int warpReduceVals[NUM_THREADS_PER_BLOCK/WARPSIZE] ;
 	__shared__ int digitTotals[RADIXSIZE] ;
 	__shared__ int digitOffsets[RADIXSIZE] ;
 	__shared__ int seedValues[RADIXSIZE] ;
@@ -172,8 +178,8 @@ static __global__ void downsweepScan(int * keysIn, int * keysOut, int * valuesIn
 	int laneID = localOffset & WARPSIZE_MIN_1 ;
 	int blockOffset = (NUM_THREADS_PER_BLOCK * blockIdx.x) * NUM_TILES_PER_BLOCK ;
 	int globalOffset = blockOffset + threadIdx.x ;
-	int numFlags[RADIXSIZE] ;
 	int digit ;
+	int numFlags ;
 	int currentKey ;
 	int currentVal ;
 
@@ -198,71 +204,51 @@ static __global__ void downsweepScan(int * keysIn, int * keysOut, int * valuesIn
 	#pragma unroll
 	for (int k = 0 ; k < NUM_TILES_PER_BLOCK ; ++k) {
 
-		#pragma unroll
-		for (int i = 0 ; i < RADIXSIZE ; ++i) {
-			numFlags[i] = 0 ;
-		}
+		numFlags = 1 ;
 		
 		// Load and decode keys plus store in shared memory. //
 		if (globalOffset < numElements) {
 			currentKey = keysIn[globalOffset] ;
 			currentVal = valuesIn[globalOffset] ;
 			digit = (currentKey>>digitPos) & RADIXMASK ;
-	//		numFlags[digit] = 1 ;
-			if (digit == 0)
-				numFlags[0] = 1 ;
-			else if (digit == 1) 
-				numFlags[1] = 1 ;
-			else if (digit == 2)
-				numFlags[2] = 1 ;
-			else if (digit == 3)
-				numFlags[3] = 1;
+			numFlags <<= PARA_BIT_SIZE*digit ;
 
 			keysInShr[localOffset] = currentKey ;
 			valuesInShr[localOffset] = currentVal ;
 		}
 
-			#pragma unroll
-			for (int i = 0 ; i < RADIXSIZE ; ++i) {
-				numFlags[i] = warpIncPrefixSum(numFlags[i], laneID, WARPSIZE) ;
-			}
-			// Save warp digit total. //
-			if (laneID == WARPSIZE_MIN_1) {
-				#pragma unroll
-				for (int i = 0 ; i < RADIXSIZE ; ++i) {
-					warpReduceVals[i*(NUM_THREADS_PER_BLOCK/WARPSIZE)+warpID] = numFlags[i] ;
-				}
-			}
-			__syncthreads() ;
+		numFlags = warpIncPrefixSum(numFlags, laneID, WARPSIZE) ;
+		// Save warp digit total. //
+		if (laneID == WARPSIZE_MIN_1) {
+			warpReduceVals[warpID] = numFlags ;
+		}
+		__syncthreads() ;
 
-			// Do a final interwarp prefix sum. //
-			int temp = 0 ;
-			if (warpID == 0) {
-				if (laneID < NUM_THREADS_PER_BLOCK/WARPSIZE) {
-					// Load warp digit totals. //
-					#pragma unroll
+		// Do a final interwarp prefix sum. //
+		int temp = 0 ;
+		if (warpID == 0) {
+			if (laneID < NUM_THREADS_PER_BLOCK/WARPSIZE) {
+				// Load warp digit totals. //
+				temp = warpReduceVals[laneID] ;
+				temp = warpIncPrefixSum(temp, laneID, NUM_THREADS_PER_BLOCK/WARPSIZE) ;
+				// Save digit totals for the block. //
+				if (laneID == (NUM_THREADS_PER_BLOCK/WARPSIZE - 1)) {
+					#pragma unroll 
 					for (int i = 0 ; i < RADIXSIZE ; ++i) {
-						temp = warpReduceVals[i*(NUM_THREADS_PER_BLOCK/WARPSIZE)+laneID] ;
-						temp = warpIncPrefixSum(temp, laneID, NUM_THREADS_PER_BLOCK/WARPSIZE) ;
-						// Save digit totals for the block. //
-						if (laneID == (NUM_THREADS_PER_BLOCK/WARPSIZE - 1)) {
-							digitTotals[i] = temp ;
-						} 
-						// Save the new prefix summed warp totals. //
-						warpReduceVals[i*(NUM_THREADS_PER_BLOCK/WARPSIZE)+laneID] = temp ;
+						digitTotals[i] = (temp >> (i*PARA_BIT_SIZE)) & PARA_BIT_MASK_0 ;
 					}
-				}
+				} 
+				// Save the new prefix summed warp totals. //
+				warpReduceVals[laneID] = temp ;
 			}
-			__syncthreads() ;
+		}
+		__syncthreads() ;
 
-			// Increment local Flags based on single warp prefix sum. //
-			#pragma unroll
-			for (int i = 0 ; i < RADIXSIZE ; ++i) {
-				temp = (warpID == 0 ? 0:warpReduceVals[i*(NUM_THREADS_PER_BLOCK/WARPSIZE)+(warpID-1)]) ;
-				numFlags[i] += temp ;
-			}
+		// Increment local Flags based on single warp prefix sum. //
+		temp = (warpID == 0 ? 0:warpReduceVals[(warpID-1)]) ;
+		numFlags += temp ;
 
-			__syncthreads() ;
+		__syncthreads() ;
 	
 		// Scan block digit totals. //
 		temp = 0 ;
@@ -281,18 +267,8 @@ static __global__ void downsweepScan(int * keysIn, int * keysOut, int * valuesIn
 		// Shuffle keys and values in shared memory per tile. //
 		if (globalOffset < numElements) {
 			int digOffset = (digit == 0 ? 0 : digitOffsets[digit-1]) ;
-			int temp = 0 ;
-			if (digit == 0)
-				temp = numFlags[0] ;
-			else if (digit == 1) 
-				temp = numFlags[1] ;
-			else if (digit == 2)
-				temp = numFlags[2] ;
-			else if (digit == 3)
-				temp = numFlags[3] ;
-
-			int newOffset  = temp + digOffset - 1 ;
-
+			int localFlag = (numFlags >> (digit*PARA_BIT_SIZE)) & PARA_BIT_MASK_0 ;
+			int newOffset  = localFlag + digOffset - 1 ;
 			keysInShr[newOffset] = currentKey ;
 			valuesInShr[newOffset] = currentVal ;
 		}
@@ -303,7 +279,6 @@ static __global__ void downsweepScan(int * keysIn, int * keysOut, int * valuesIn
 			currentKey = keysInShr[localOffset] ;
 			currentVal = valuesInShr[localOffset] ;
 			int newDigit = (currentKey >> digitPos) & RADIXMASK ;
-
 			int writeOffset = (newDigit == 0 ? 0 : digitOffsets[newDigit-1]) ;
 			int globalWriteLoc = seedValues[newDigit] + localOffset - writeOffset ;
 			keysOut[globalWriteLoc] = currentKey ;
@@ -316,7 +291,6 @@ static __global__ void downsweepScan(int * keysIn, int * keysOut, int * valuesIn
 		}
 
 		globalOffset += NUM_THREADS_PER_BLOCK ;
-
 	}
 }
 
@@ -406,8 +380,6 @@ static __global__ void intraWarpScan(int * input, int * output) {
 	localVal2 += temp1 ;
 	localVal3 += temp1 ;
 	localVal4 += temp1 ;
-
-
 
 	output[offset+laneID] = localVal1 ;
 	output[offset+32+laneID] = localVal2 ;
