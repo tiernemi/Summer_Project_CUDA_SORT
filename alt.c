@@ -34,7 +34,7 @@
 
 #define NUM_BLOCKS 512
 #define NUM_THREADS_PER_BLOCK 32
-#define NUM_TILES_PER_BLOCK 8
+#define NUM_TILES_PER_BLOCK 4
 
 #define PARA_BIT_SIZE 8
 #define NUM_BIT_PARTITIONS 32/PARA_BIT_SIZE
@@ -170,7 +170,7 @@ __device__ inline int warpExPrefixSum(int localVal, int laneID, int numThreads) 
 
 
 static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keysOut, const int * __restrict__ valuesIn, int * valuesOut, int * reduceArray, const int numElements, const int digitPos) {
-	// Declarations. //`
+	// Declarations. //
 	__shared__ int warpReduceVals[NUM_THREADS_PER_BLOCK/WARPSIZE] ;
 	__shared__ int digitTotals[RADIXSIZE] ;
 	__shared__ int digitOffsets[RADIXSIZE] ;
@@ -188,7 +188,6 @@ static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keys
 	int globalOffset = blockOffset + threadIdx.x ;
 	int digit[VEC_SIZE] ;
 	int localFlags[VEC_SIZE] ;
-	int orig ; 
 	int numFlags ;
 	U4 keyVec ;
 	U4 valVec ;
@@ -219,7 +218,9 @@ static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keys
 		
 		// Load and decode keys plus store in shared memory. //
 		if ((VEC_SIZE*globalOffset) < numElements) {
+			U4 keyVec ;
 			keyVec.vec = reinterpret_cast<const int4*>(keysIn)[globalOffset] ;
+			U4 valVec ;
 			valVec.vec = reinterpret_cast<const int4*>(valuesIn)[globalOffset] ;
 			#pragma unroll
 			for (int i = 0 ; i < VEC_SIZE ; ++i) {
@@ -227,25 +228,19 @@ static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keys
 				localFlags[i] = (1 << PARA_BIT_SIZE*digit[i]) ;
 			}
 			// Serial reduction. //
+			int temp = localFlags[0] ;
+			localFlags[0] = 0 ;
 			#pragma unroll
 			for (int i = 1 ; i < VEC_SIZE ; ++i) {
-				localFlags[i] += localFlags[i-1] ;
+				localFlags[i] = temp ;
+				temp += localFlags[i-1] ;
 			}
-			numFlags = localFlags[VEC_SIZE-1] ;
-			orig = numFlags ;
+			numFlags = temp ;
 
-
-			#pragma unroll
-			for (int i = VEC_SIZE-1 ; i >= 1 ; --i) {
-				localFlags[i] = localFlags[i-1] ;
-			}
-			localFlags[0] = 0 ;
-	
 			#pragma unroll
 			for (int i = 0 ; i < VEC_SIZE ; ++i) {
 				keysInShr[VEC_SIZE*localOffset+i] = keyVec.a[i] ;
 				valuesInShr[VEC_SIZE*localOffset+i] = valVec.a[i] ;
-
 			}
 		}
 
@@ -278,7 +273,9 @@ static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keys
 
 		// Increment local Flags based on single warp prefix sum. //
 		temp = (warpID == 0 ? 0:warpReduceVals[(warpID-1)]) ;
+
 		numFlags += temp ;
+		digitTotals[i] = (numFlags >> (i*PARA_BIT_SIZE)) & PARA_BIT_MASK_0 ;
 
 		// Serially increment local flags in registers. //
 		#pragma unroll
@@ -288,7 +285,6 @@ static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keys
 
 		__syncthreads() ;
 	
-
 		// Scan block digit totals. //
 		temp = 0 ;
 		if (warpID == 0) {
@@ -304,13 +300,13 @@ static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keys
 		__syncthreads() ;
 
 		// Shuffle keys and values in shared memory per tile. //
-		if (VEC_SIZE*globalOffset < numElements) {
+		if (globalOffset < numElements) {
 			#pragma unroll
 			for (int i = 0 ; i < VEC_SIZE ; ++i) {
 				int digOffset = (digit[i] == 0 ? 0 : digitOffsets[digit[i]-1]) ;
 				int localPos = (localFlags[i] >> (digit[i]*PARA_BIT_SIZE)) & PARA_BIT_MASK_0 ;
-				int origOff = (orig >> (digit[i]*PARA_BIT_SIZE)) & PARA_BIT_MASK_0 ;
-				int newOffset  = localPos - origOff + digOffset  ;
+				printf("%d %d %d\n", k, blockIdx.x, localPos);
+				int newOffset  = localPos + digOffset - 1 ;
 				keysInShr[newOffset] = keyVec.a[i] ;
 				valuesInShr[newOffset] = valVec.a[i] ;
 			}
@@ -319,14 +315,14 @@ static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keys
 		__syncthreads() ;
 
 		// Scatter keys based on local prefix sum, tile prefix sum and block prefix sum. //
-		if (VEC_SIZE*globalOffset < numElements) {
+		if (globalOffset < numElements) {
 			#pragma unroll
 			for (int i = 0 ; i < VEC_SIZE ; ++i) {
 				keyVec.a[i] = keysInShr[VEC_SIZE*localOffset+i] ;
 				valVec.a[i] = valuesInShr[VEC_SIZE*localOffset+i] ;
 				int newDigit = (keyVec.a[i] >> digitPos) & RADIXMASK ;
 				int writeOffset = (newDigit == 0 ? 0 : digitOffsets[newDigit-1]) ;
-				int globalWriteLoc = seedValues[newDigit] + VEC_SIZE*localOffset + i - writeOffset ;
+				int globalWriteLoc = seedValues[newDigit] + localOffset - writeOffset ;
 				keysOut[globalWriteLoc] = keyVec.a[i] ;
 				valuesOut[globalWriteLoc] = valVec.a[i] ;
 			}
@@ -481,7 +477,7 @@ static void sort(int * keys, int * values, const int numElements) {
 	// Give threads more shmem. //
 	cudaDeviceSetCacheConfig(cudaFuncCachePreferShared) ;
 
-	for (int i = 0 ; i < 30 ; i+=2) {
+	for (int i = 0 ; i < 2 ; i+=2) {
 		upsweepReduce<<<reductionGrid,reductionBlock>>>(keyPtr1,blockReduceArray+1,numElements,i) ;
 		gpuErrchk( cudaPeekAtLastError() );
 		gpuErrchk( cudaDeviceSynchronize() );
