@@ -66,6 +66,31 @@ __global__ void checkSortedGlobal(int * keys, const int numElements, int numDigi
 
 /* 
  * ===  FUNCTION  ======================================================================
+ *         Name:  checkFullySortedGlobal
+ *    Arguments:  int * keys - Array of keys.
+ *                const int numElements - Number of keys. 
+ *  Description:  Prints if keys aren't sorted for a given number of digit bits.
+ * =====================================================================================
+ */
+
+__global__ void checkFullySortedGlobal(int * keys, const int numElements) {
+	int globalID = threadIdx.x + blockDim.x * blockIdx.x ;
+	if (globalID == 0) {
+		int preval = keys[0] ;
+		for (int i = 1 ; i < numElements ; ++i) {
+			int curval = keys[i] ;
+			if (curval < preval) {
+				printf("Not Sorted : %d %d %d\n", i, curval, preval) ;
+			}
+			preval = curval ;
+		}
+	}
+}
+
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
  *         Name:  printPrefixValues
  *    Arguments:  int * prefixSum - Array used for prefixSum.
  *                const int numElements - Number of keys. 

@@ -85,12 +85,13 @@ WVTEST_MAIN("Sorting tests")
 
 	*/
 
+	/*
 	GPUSorts::CubRadixGPUSort cubSorter ;
 	cubSorter.sortTriangles(triangles,cameras) ;
 	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
-
+*/
 	/* 
 	GPUSorts::BasicRadixGPUSort baseSorter ;
 	baseSorter.sortTriangles(triangles,cameras) ;
@@ -99,11 +100,13 @@ WVTEST_MAIN("Sorting tests")
 	triangles = temp ;
 	*/
 
+	/*  
 	GPUSorts::SharedRadixGPUSort shareSorter ;
 	shareSorter.sortTriangles(triangles,cameras) ;
 	Transforms::transformToDistVec(distances,triangles,cameras[cameras.size()-1]) ;
 	WVPASSEQ(Tests::checkSorted(distances),1) ;
 	triangles = temp ;
+	*/
 
 	GPUSorts::MerrelRadixGPUSort merSorter ;
 	merSorter.sortTriangles(triangles,cameras) ;

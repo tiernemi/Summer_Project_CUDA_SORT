@@ -20,6 +20,7 @@
 
 __global__ void printRadixValues(int * keys, const int numElements, int numDigits) ;
 __global__ void checkSortedGlobal(int * keys, const int numElements, int numDigits) ;
+__global__ void checkFullySortedGlobal(int * keys, const int numElements) ;
 __global__ void printPrefixValues(int * prefixSum, const int numElements) ;
 __global__ void checkPrefixSumGlobal(int * prefixSum, const int numElements) ;
 

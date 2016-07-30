@@ -62,11 +62,17 @@ int main(int argc, char *argv[]) {
 	merSorter.sortTriangles(temp,cameras[0]) ; 
 	myClock.stop() ;
 	std::cout << myClock.getDuration() << std::endl;
+
+	std::vector<std::pair<int,float>> dists(temp.size()) ;
+	Transforms::transformToDistVec(dists,temp,cameras[0]) ;
+	/*  
+	for (int i = 0 ; i < temp.size() ; ++i) {
+		std::cout << dists[i].second << std::endl;
+	} */
+
 	temp = triangles ;
-	myClock.start() ;
-	//tSorter.sortTriangles(temp,cameras[0]) ; 
-	myClock.stop() ;
-	std::cout << myClock.getDuration() << std::endl;
+
+	
 
 	return EXIT_SUCCESS ;
 }
