@@ -115,7 +115,7 @@ static __global__ void upsweepReduce(int * keys, int * reduceArray, int numEleme
 			if (threadIdx.x == 0) {
 				#pragma unroll
 				for (int i = 0 ; i < RADIXSIZE ; ++i) {
-					tileTotal[i] = (numFlags >> (i*PARA_BIT_SIZE) & PARA_BIT_MASK_0) ;
+					tileTotal[i] += (numFlags >> (i*PARA_BIT_SIZE) & PARA_BIT_MASK_0) ;
 				}
 			}
 		}
