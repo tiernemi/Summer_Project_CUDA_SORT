@@ -85,11 +85,11 @@ static __global__ void upsweepReduce(int * keys, int * reduceArray, int numEleme
 	
 	#pragma unroll
 	for (int k = 0 ; k < NUM_TILES_PER_BLOCK ; ++k) {
-		numFlags = 1 ;
+		numFlags = 0  ;
 		// Decode keys. //
 		if ((globalOffset) < numElements) {
 			int digit = (keys[globalOffset]>>digitPos) & RADIXMASK ;
-			numFlags <<= PARA_BIT_SIZE*digit ;
+			numFlags += (1 << PARA_BIT_SIZE*digit) ;
 		}
 
 		__syncthreads() ;
@@ -204,14 +204,14 @@ static __global__ void downsweepScan(int * keysIn, int * keysOut, int * valuesIn
 	#pragma unroll
 	for (int k = 0 ; k < NUM_TILES_PER_BLOCK ; ++k) {
 
-		numFlags = 1 ;
+		numFlags = 0 ;
 		
 		// Load and decode keys plus store in shared memory. //
 		if (globalOffset < numElements) {
 			currentKey = keysIn[globalOffset] ;
 			currentVal = valuesIn[globalOffset] ;
 			digit = (currentKey>>digitPos) & RADIXMASK ;
-			numFlags <<= PARA_BIT_SIZE*digit ;
+			numFlags += (1 <<  PARA_BIT_SIZE*digit) ;
 
 			keysInShr[localOffset] = currentKey ;
 			valuesInShr[localOffset] = currentVal ;
@@ -436,6 +436,7 @@ static void sort(int * keys, int * values, const int numElements) {
 		gpuErrchk( cudaPeekAtLastError() );
 		gpuErrchk( cudaDeviceSynchronize() );
 		intraWarpScan<<<1,NUM_BLOCKS>>>(blockReduceArray+1,blockReduceArray+1) ;
+	//	printTopArray<<<1,1>>>(blockReduceArray,NUM_BLOCKS * RADIXSIZE + 1) ;
 		gpuErrchk( cudaPeekAtLastError() );
 		gpuErrchk( cudaDeviceSynchronize() );
 		downsweepScan<<<reductionGrid,reductionBlock>>>(keyPtr1, keyPtr2, valPtr1, valPtr2, blockReduceArray, numElements, i) ;
