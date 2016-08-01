@@ -77,7 +77,6 @@ static __global__ void upsweepReduce(const int * __restrict__ keys, int * reduce
 		tileTotal[threadIdx.x] = 0 ;
 	}
 	
-	#pragma unroll
 	for (int k = 0 ; k < numTiles ; ++k) {
 		numFlags = 0 ;
 		// Decode keys. //
@@ -225,7 +224,6 @@ static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keys
 
 
 	// Process each tile sequentially. //
-	#pragma unroll
 	for (int k = 0 ; k < numTiles ; ++k) {
 
 		temp = 0 ;
