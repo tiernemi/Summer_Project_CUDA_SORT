@@ -195,9 +195,6 @@ static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keys
 			currentVal = valuesIn[globalOffset] ;
 			digit = (currentKey>>digitPos) & RADIXMASK ;
 			numFlags += (1 <<  PARA_BIT_SIZE*digit) ;
-
-			keysInShr[threadIdx.x] = currentKey ;
-			valuesInShr[threadIdx.x] = currentVal ;
 		}
 
 		numFlags = warpIncPrefixSum(numFlags, laneID, WARPSIZE) ;
@@ -416,11 +413,10 @@ static void sort(int * keys, int * values, const int numElements, const int numT
 		upsweepReduce<<<reductionGrid,reductionBlock>>>(keyPtr1,blockReduceArray+1,numElements,i,numTiles) ;
 		gpuErrchk( cudaPeekAtLastError() );
 		gpuErrchk( cudaDeviceSynchronize() );
-	//	intraWarpScan<<<1,NUM_BLOCKS>>>(blockReduceArray+1,blockReduceArray+1) ;
-	//	printTopArray<<<1,1>>>(blockReduceArray,NUM_BLOCKS * RADIXSIZE + 1) ;
+		intraWarpScan<<<1,NUM_BLOCKS>>>(blockReduceArray+1,blockReduceArray+1) ;
 		gpuErrchk( cudaPeekAtLastError() );
 		gpuErrchk( cudaDeviceSynchronize() );
-	//	downsweepScan<<<reductionGrid,reductionBlock>>>(keyPtr1, keyPtr2, valPtr1, valPtr2, blockReduceArray, numElements, i, numTiles) ;
+		downsweepScan<<<reductionGrid,reductionBlock>>>(keyPtr1, keyPtr2, valPtr1, valPtr2, blockReduceArray, numElements, i, numTiles) ;
 		gpuErrchk( cudaPeekAtLastError() );
 		gpuErrchk( cudaDeviceSynchronize() );
 		std::swap(keyPtr1,keyPtr2) ;
