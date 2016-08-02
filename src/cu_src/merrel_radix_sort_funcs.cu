@@ -404,8 +404,8 @@ static void sort(int * keys, int * values, const int numElements, const int numT
 //	dim3 reductionGrid(NUM_BLOCKS) ;
 
 
-	dim3 reductionBlock(3*NUM_THREADS_PER_BLOCK) ;
-	dim3 reductionGrid(6*NUM_BLOCKS) ;
+	dim3 reductionBlock(NUM_THREADS_PER_BLOCK) ;
+	dim3 reductionGrid(NUM_BLOCKS) ;
 
 	// Create buffer for keys and values. //
 	int * keyPtr1 = keys ;
@@ -421,7 +421,7 @@ static void sort(int * keys, int * values, const int numElements, const int numT
 		gpuErrchk( cudaPeekAtLastError() );
 		gpuErrchk( cudaDeviceSynchronize() );
 
-		intraWarpScan<<<1,NUM_BLOCKS>>>(blockReduceArray+1,blockReduceArray+1) ;
+		//intraWarpScan<<<1,NUM_BLOCKS>>>(blockReduceArray+1,blockReduceArray+1) ;
 		gpuErrchk( cudaPeekAtLastError() );
 		gpuErrchk( cudaDeviceSynchronize() );
 //		downsweepScan<<<reductionGrid,reductionBlock>>>(keyPtr1, keyPtr2, valPtr1, valPtr2, blockReduceArray, numElements, i, numTiles) ;
