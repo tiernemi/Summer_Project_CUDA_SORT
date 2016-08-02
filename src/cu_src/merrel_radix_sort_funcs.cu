@@ -34,7 +34,7 @@
 
 
 #define NUM_BLOCKS 512
-#define NUM_THREADS_PER_BLOCK 160
+#define NUM_THREADS_PER_BLOCK 128
 #define NUM_WARPS NUM_THREADS_PER_BLOCK/WARPSIZE
 
 #define PARA_BIT_SIZE 8
@@ -154,21 +154,22 @@ __device__ __forceinline__ int warpExPrefixSum(int localVal, int laneID, int num
 static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keysOut, const int * __restrict__ valuesIn, int * valuesOut, const int * __restrict__ reduceArray, int numElements, int digitPos, const int numTiles) {
 	// Declarations. //
 	__shared__ int warpReduceVals[NUM_WARPS] ;
-	__shared__ int digitTotals ;
+	__shared__ int warpReduceValsSplit[NUM_WARPS*RADIXSIZE] ;
+	__shared__ int digitTotals[RADIXSIZE] ;
 	__shared__ int digitOffsets[RADIXSIZE] ;
 	__shared__ int seedValues[RADIXSIZE] ;
-	__shared__ int keysInShr[NUM_THREADS_PER_BLOCK] ;
-	__shared__ int valuesInShr[NUM_THREADS_PER_BLOCK] ;
+	__shared__ int keysInShr[NUM_THREADS_PER_BLOCK * NUM_KEYS_PER_THREAD] ;
+	__shared__ int valuesInShr[NUM_THREADS_PER_BLOCK * NUM_KEYS_PER_THREAD] ;
 
 	// Get IDs. //
 	int warpID  = threadIdx.x / WARPSIZE ;
 	int laneID = threadIdx.x & WARPSIZE_MIN_1 ;
-	int blockOffset = (NUM_THREADS_PER_BLOCK * blockIdx.x) * numTiles ;
-	int globalOffset = blockOffset + threadIdx.x ;
-	int digit ;
-	int numFlags ;
-	int currentKey ;
-	int currentVal ;
+	int blockOffset = (NUM_THREADS_PER_BLOCK * NUM_KEYS_PER_THREAD * blockIdx.x) * numTiles ;
+	int globalOffset = blockOffset + laneID + warpID * WARPSIZE * NUM_KEYS_PER_THREAD ;
+	int digit[NUM_KEYS_PER_THREAD] ;
+	int numFlags[NUM_KEYS_PER_THREAD] ;
+	int currentKey[NUM_KEYS_PER_THREAD] ;
+	int currentVal[NUM_KEYS_PER_THREAD] ;
 
 	if (threadIdx.x < RADIXSIZE) {
 		seedValues[threadIdx.x] = reduceArray[threadIdx.x*NUM_BLOCKS+blockIdx.x] ;
@@ -190,23 +191,33 @@ static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keys
 	// Process each tile sequentially. //
 	for (int k = 0 ; k < numTiles ; ++k) {
 
-		numFlags = 0 ;
-		
 		// Load and decode keys plus store in shared memory. //
-		if (globalOffset < numElements) {
-			currentKey = keysIn[globalOffset] ;
-			currentVal = valuesIn[globalOffset] ;
-			digit = (currentKey>>digitPos) & RADIXMASK ;
-			numFlags += (1 <<  PARA_BIT_SIZE*digit) ;
-
-			keysInShr[threadIdx.x] = currentKey ;
-			valuesInShr[threadIdx.x] = currentVal ;
+		#pragma unroll
+		for (int i = 0 ; i < NUM_KEYS_PER_THREAD ; ++i) {
+			numFlags[i] = 0 ;
+			if (globalOffset+i*WARPSIZE < numElements) {
+				currentKey[i] = keysIn[globalOffset+i*WARPSIZE] ;
+				currentVal[i] = valuesIn[globalOffset+i*WARPSIZE] ;
+				digit[i] = (currentKey[i]>>digitPos) & RADIXMASK ;
+				numFlags[i] = (1 <<  PARA_BIT_SIZE*digit[i]) ;
+				//keysInShr[laneID + warpID * WARPSIZE * NUM_KEYS_PER_THREAD + i * WARPSIZE] = currentKey ;
+				//valuesInShr[laneID + warpID * WARPSIZE * NUM_KEYS_PER_THREAD + i * WARPSIZE] = currentVal ;
+			}
 		}
 
-		numFlags = warpIncPrefixSum(numFlags, laneID, WARPSIZE) ;
+		#pragma unroll
+		for (int i = 0 ; i < NUM_KEYS_PER_THREAD ; ++i) {
+			numFlags[i] = warpIncPrefixSum(numFlags[i], laneID, WARPSIZE) ;
+		}
+
+		#pragma unroll 
+		for (int i = 0 ; i < NUM_KEYS_PER_THREAD-1 ; ++i) {
+			numFlags[i+1] += __shfl(numFlags[i],WARPSIZE_MIN_1) ;
+		}
+
 		// Save warp digit total. //
 		if (laneID == WARPSIZE_MIN_1) {
-			warpReduceVals[warpID] = numFlags ;
+			warpReduceVals[warpID] = numFlags[NUM_KEYS_PER_THREAD-1] ;
 		}
 		__syncthreads() ;
 
@@ -214,30 +225,30 @@ static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keys
 		int temp = 0 ;
 		if (warpID == 0) {
 			if (laneID < NUM_WARPS) {
+				int temp2 = warpReduceVals[laneID] ;
 				// Load warp digit totals. //
-				temp = warpReduceVals[laneID] ;
-				temp = warpIncPrefixSum(temp, laneID, NUM_WARPS) ;
-				// Save digit totals for the block. //
-				if (laneID == (NUM_WARPS - 1)) {
-					digitTotals = temp  ;
-				} 
+				#pragma unroll
+				for (int i = 0 ; i < RADIXSIZE ; ++i) {
+					temp = (temp2 >> i*PARA_BIT_SIZE) & PARA_BIT_MASK_0 ;
+					temp = warpIncPrefixSum(temp, laneID, NUM_WARPS) ;
+					// Save digit totals for the block. //
+					if (laneID == (NUM_WARPS - 1)) {
+						digitTotals[i] = temp  ;
+					}
+					warpReduceValsSplit[i*NUM_WARPS+laneID] = temp ;
+				}
 				// Save the new prefix summed warp totals. //
-				warpReduceVals[laneID] = temp ;
 			}
 		}
-		__syncthreads() ;
-
-		// Increment local Flags based on single warp prefix sum. //
-		numFlags += (warpID == 0 ? 0:warpReduceVals[(warpID-1)]) ;
 
 		__syncthreads() ;
-	
+
 		// Scan block digit totals. //
 		temp = 0 ;
 		if (warpID == 0) {
 			if (laneID < RADIXSIZE) {
 				// Load warp digit totals. //
-				temp = (digitTotals >> laneID * PARA_BIT_SIZE) & PARA_BIT_MASK_0 ;
+				temp = (digitTotals[laneID]) ;
 				temp = warpIncPrefixSum(temp, laneID, RADIXSIZE) ;
 				// Save the new prefix summed warp digit totals. //
 				// Save the new prefix summed warp digit totals. //
@@ -248,32 +259,43 @@ static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keys
 		__syncthreads() ;
 
 		// Shuffle keys and values in shared memory per tile. //
-		if (globalOffset < numElements) {
-			int digOffset = (digit == 0 ? 0 : digitOffsets[digit-1]) ;
-			int localFlag = (numFlags >> (digit*PARA_BIT_SIZE)) & PARA_BIT_MASK_0 ;
-			int newOffset  = localFlag + digOffset - 1 ;
-			keysInShr[newOffset] = currentKey ;
-			valuesInShr[newOffset] = currentVal ;
+		#pragma unroll
+		for (int i = 0 ; i < NUM_KEYS_PER_THREAD ; ++i) {
+			if (globalOffset+i*WARPSIZE < numElements) {
+				int digOffset = (digit[i] == 0 ? 0 : digitOffsets[digit[i]-1]) ;
+				int warpOffset = (warpID == 0 ? 0:warpReduceValsSplit[(digit[i]*NUM_WARPS+warpID-1)]) ;
+				int localFlag = (numFlags[i] >> (digit[i]*PARA_BIT_SIZE)) & PARA_BIT_MASK_0 ;
+				int newOffset  = localFlag + digOffset + warpOffset - 1 ;
+				keysInShr[newOffset] = currentKey[i] ;
+				valuesInShr[newOffset] = currentVal[i] ;
+			}
 		}
+
 		__syncthreads() ;
 
 		// Scatter keys based on local prefix sum, tile prefix sum and block prefix sum. //
-		if (globalOffset < numElements) {
-			currentKey = keysInShr[threadIdx.x] ;
-			currentVal = valuesInShr[threadIdx.x] ;
-			int newDigit = (currentKey >> digitPos) & RADIXMASK ;
-			int writeOffset = (newDigit == 0 ? 0 : digitOffsets[newDigit-1]) ;
-			int globalWriteLoc = seedValues[newDigit] + threadIdx.x - writeOffset ;
-			keysOut[globalWriteLoc] = currentKey ;
-			valuesOut[globalWriteLoc] = currentVal ;
-		} 
+		#pragma unroll
+		for (int i = 0 ; i < NUM_KEYS_PER_THREAD ; ++i) {
+			if (globalOffset+i*WARPSIZE < numElements) {
+				currentKey[0] = keysInShr[laneID+i*WARPSIZE + warpID*WARPSIZE*NUM_KEYS_PER_THREAD] ;
+				currentVal[0] = valuesInShr[laneID+i*WARPSIZE + warpID*WARPSIZE*NUM_KEYS_PER_THREAD] ;
+		//		printf("%d %d\n", (currentKey[0] >> digitPos ) & RADIXMASK, laneID+i*WARPSIZE + warpID*WARPSIZE*NUM_KEYS_PER_THREAD);
+				int newDigit = (currentKey[0] >> digitPos) & RADIXMASK ;
+				int writeOffset = (newDigit == 0 ? 0 : digitOffsets[newDigit-1]) ;
+				int globalWriteLoc = seedValues[newDigit] + laneID+i*WARPSIZE + 
+					warpID*WARPSIZE*NUM_KEYS_PER_THREAD - writeOffset ;
+				keysOut[globalWriteLoc] = currentKey[0] ;
+				valuesOut[globalWriteLoc] = currentVal[0] ;
+			} 
+		}
+
 		__syncthreads() ;
 
 		if (threadIdx.x < RADIXSIZE) {
-			seedValues[threadIdx.x] += (digitTotals >> threadIdx.x * PARA_BIT_SIZE) & PARA_BIT_MASK_0 ;
+			seedValues[threadIdx.x] += (digitTotals[threadIdx.x]) ;
 		}
 
-		globalOffset += NUM_THREADS_PER_BLOCK ;
+		globalOffset += NUM_THREADS_PER_BLOCK*NUM_KEYS_PER_THREAD ;
 	}
 }
 
@@ -421,10 +443,11 @@ static void sort(int * keys, int * values, const int numElements, const int numT
 		gpuErrchk( cudaPeekAtLastError() );
 		gpuErrchk( cudaDeviceSynchronize() );
 
-		//intraWarpScan<<<1,NUM_BLOCKS>>>(blockReduceArray+1,blockReduceArray+1) ;
+		intraWarpScan<<<1,NUM_BLOCKS>>>(blockReduceArray+1,blockReduceArray+1) ;
+	//	printTopArray<<<1,1>>>(blockReduceArray+1, NUM_BLOCKS * RADIXSIZE +1) ;
 		gpuErrchk( cudaPeekAtLastError() );
 		gpuErrchk( cudaDeviceSynchronize() );
-//		downsweepScan<<<reductionGrid,reductionBlock>>>(keyPtr1, keyPtr2, valPtr1, valPtr2, blockReduceArray, numElements, i, numTiles) ;
+		downsweepScan<<<reductionGrid,reductionBlock>>>(keyPtr1, keyPtr2, valPtr1, valPtr2, blockReduceArray, numElements, i, numTiles) ;
 		gpuErrchk( cudaPeekAtLastError() );
 		gpuErrchk( cudaDeviceSynchronize() );
 		std::swap(keyPtr1,keyPtr2) ;
@@ -433,13 +456,13 @@ static void sort(int * keys, int * values, const int numElements, const int numT
 
 
 	if (values != valPtr1) {
-	//	cudaMemcpy(values, valPtr1, sizeof(int)*numElements, cudaMemcpyDeviceToDevice) ;
+		cudaMemcpy(values, valPtr1, sizeof(int)*numElements, cudaMemcpyDeviceToDevice) ;
 		cudaFree(valPtr1) ;
 	} else {
 		cudaFree(valPtr2) ;
 	}
 	if (keys != keyPtr1) {
-	//	cudaMemcpy(keys, keyPtr1, sizeof(int)*numElements, cudaMemcpyDeviceToDevice) ;
+		cudaMemcpy(keys, keyPtr1, sizeof(int)*numElements, cudaMemcpyDeviceToDevice) ;
 		cudaFree(keyPtr1) ;
 	} else {
 		cudaFree(keyPtr2) ;
