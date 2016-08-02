@@ -416,11 +416,11 @@ static void sort(int * keys, int * values, const int numElements, const int numT
 		upsweepReduce<<<reductionGrid,reductionBlock>>>(keyPtr1,blockReduceArray+1,numElements,i,numTiles) ;
 		gpuErrchk( cudaPeekAtLastError() );
 		gpuErrchk( cudaDeviceSynchronize() );
-		intraWarpScan<<<1,NUM_BLOCKS>>>(blockReduceArray+1,blockReduceArray+1) ;
+	//	intraWarpScan<<<1,NUM_BLOCKS>>>(blockReduceArray+1,blockReduceArray+1) ;
 	//	printTopArray<<<1,1>>>(blockReduceArray,NUM_BLOCKS * RADIXSIZE + 1) ;
 		gpuErrchk( cudaPeekAtLastError() );
 		gpuErrchk( cudaDeviceSynchronize() );
-		downsweepScan<<<reductionGrid,reductionBlock>>>(keyPtr1, keyPtr2, valPtr1, valPtr2, blockReduceArray, numElements, i, numTiles) ;
+	//	downsweepScan<<<reductionGrid,reductionBlock>>>(keyPtr1, keyPtr2, valPtr1, valPtr2, blockReduceArray, numElements, i, numTiles) ;
 		gpuErrchk( cudaPeekAtLastError() );
 		gpuErrchk( cudaDeviceSynchronize() );
 		std::swap(keyPtr1,keyPtr2) ;
@@ -464,7 +464,7 @@ void cudaMerrelRadixSortTriangles(std::vector<Triangle> & triangles, std::vector
 
 
 	int numTiles = 1 ;	
-	float tempVar = numTriangles / (NUM_THREADS_PER_BLOCK * numTiles * NUM_BLOCKS) ; 
+	float tempVar = numTriangles / float(NUM_THREADS_PER_BLOCK * numTiles * NUM_BLOCKS) ; 
 	while (tempVar > 1) {
 		++numTiles ;
 		tempVar = numTriangles / float(NUM_THREADS_PER_BLOCK * numTiles * NUM_BLOCKS)  ;
@@ -551,7 +551,7 @@ void cudaMerrelRadixSortTriangles(std::vector<Triangle> & triangles, std::vector
 	const int numCameras = cameras.size() ;
 
 	int numTiles = 1 ;	
-	float tempVar = numTriangles / (NUM_THREADS_PER_BLOCK * numTiles * NUM_BLOCKS) ; 
+	float tempVar = numTriangles / float(NUM_THREADS_PER_BLOCK * numTiles * NUM_BLOCKS) ; 
 	while (tempVar > 1) {
 		++numTiles ;
 		tempVar = numTriangles / float(NUM_THREADS_PER_BLOCK * numTiles * NUM_BLOCKS)  ;
