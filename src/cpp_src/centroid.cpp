@@ -1,9 +1,9 @@
 /*
  * =====================================================================================
  *
- *       Filename:  triangle.cpp
+ *       Filename:  centroid.cpp
  *
- *    Description:  Source file for triangle storage class.
+ *    Description:  Source file for centroid storage class.
  *
  *        Version:  1.0
  *        Created:  08/06/16 11:17:27
@@ -15,54 +15,54 @@
  * =====================================================================================
  */
 
-#include "../../inc/cpp_inc/triangle.hpp"
+#include "../../inc/cpp_inc/centroid.hpp"
 #include "../../inc/cpp_inc/camera.hpp"
 
 /* 
- * ===  MEMBER FUNCTION CLASS : Triangle  ======================================
- *         Name:  Triangle
+ * ===  MEMBER FUNCTION CLASS : Centroid  ======================================
+ *         Name:  Centroid
  *    Arguments:  const float & x - x-co-ord ;
  *                const float & y - y-co-ord ;
  *                const float & z - z-co-ord ;
- *                const int id - ID of triangle ;
- *  Description:  Constructor for triangle object.
+ *                const int id - ID of centroid ;
+ *  Description:  Constructor for centroid object.
  * =====================================================================================
  */
 
-Triangle::Triangle(const float & x, const float & y, const float & z, const int id) {
+Centroid::Centroid(const float & x, const float & y, const float & z, const int id) {
 	coords[0] = x ;
 	coords[1] = y ;
 	coords[2] = z ;
 	this->id = id ;
-}		/* -----  end of member function Triangle  ----- */
+}		/* -----  end of member function Centroid  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : Triangle  ======================================
- *         Name:  Triangle
- *    Arguments:  const Triangle & tri - Triangle to copy.
+ * ===  MEMBER FUNCTION CLASS : Centroid  ======================================
+ *         Name:  Centroid
+ *    Arguments:  const Centroid & tri - Centroid to copy.
  *  Description:  Copy constructor for truangle.
  * =====================================================================================
  */
 
-Triangle::Triangle(const Triangle & obj) {
+Centroid::Centroid(const Centroid & obj) {
 	const float * objco = obj.getCoords() ;
 	coords[0] = objco[0] ; 
 	coords[1] = objco[1] ; 
 	coords[2] = objco[2] ; 
 	id = obj.id ;
-}		/* -----  end of member function Triangle  ----- */
+}		/* -----  end of member function Centroid  ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : Triangle  ======================================
+ * ===  MEMBER FUNCTION CLASS : Centroid  ======================================
  *         Name:  setCoords
  *    Arguments:  const float & x - x-co-ord ;
  *                const float & y - y-co-ord ;
  *                const float & z - z-co-ord ;
- *  Description:  Sets co-ords of triangle.
+ *  Description:  Sets co-ords of centroid.
  * =====================================================================================
  */
 
-void Triangle::setCoords(const float & x, const float & y, const float & z) {
+void Centroid::setCoords(const float & x, const float & y, const float & z) {
 	coords[0] = x ;
 	coords[1] = y ;
 	coords[2] = z ;
@@ -71,22 +71,22 @@ void Triangle::setCoords(const float & x, const float & y, const float & z) {
 /* 
  * ===  MEMBER FUNCTION CLASS :   ======================================
  *         Name:  setID
- *    Arguments:  const unsigned int id - ID of triangle/
- *  Description:  Sets ID of triangle.
+ *    Arguments:  const unsigned int id - ID of centroid/
+ *  Description:  Sets ID of centroid.
  * =====================================================================================
  */
 
-void Triangle::setID(const unsigned int id) {
+void Centroid::setID(const unsigned int id) {
 	this->id = id ;
 }		/* -----  end of member function   ----- */
 
 /* 
- * ===  MEMBER FUNCTION CLASS : Triangle  ======================================
- *         Name: ~Triangle 
- *  Description: Virtual destructor for triangle object.
+ * ===  MEMBER FUNCTION CLASS : Centroid  ======================================
+ *         Name: ~Centroid 
+ *  Description: Virtual destructor for centroid object.
  * =====================================================================================
  */
 
-Triangle::~Triangle() {
+Centroid::~Centroid() {
 	
 }		/* -----  end of member function   ----- */

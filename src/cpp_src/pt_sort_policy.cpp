@@ -1,12 +1,12 @@
 /*
  * =====================================================================================
  *
- *       Filename:  radix_sort_pt.cpp
+ *       Filename:  pt_sort_policy.cpp
  *
- *    Description:  Implementaion of radix sort on cpu.
+ *    Description:  
  *
  *        Version:  1.0
- *        Created:  2016-06-13 13:52
+ *        Created:  11/08/16 11:01:19
  *       Revision:  none
  *       Compiler:  g++
  *
@@ -15,98 +15,58 @@
  * =====================================================================================
  */
 
-#include <vector>
-#include <iostream>
-#include <tuple>
-#include <string.h>
-
-// Custom Headers //
-#include "../../inc/cpp_inc/radix_sort_pt.hpp"
+#include "stdlib.h"
+#include "string.h"
+#include "../../inc/cpp_inc/pt_sort_policy.hpp"
 #include "../../inc/cpp_inc/transforms.hpp"
 #include "../../inc/cpp_inc/clock.hpp"
-#include "../../inc/cpp_inc/test_funcs.hpp"
 
-namespace CPUSorts {
 
 typedef unsigned char ubyte ;
-static const unsigned int histSize = 1024 ;
-static const unsigned int offSize = 256 ;
-
-static void sortRadices(const float * input2, unsigned int * indices1, unsigned int size) ;
+static const unsigned int HIST_SIZE = 1024 ;
+static const unsigned int OFF_SIZE = 256 ;
 static bool createHistogram(const float * buffer, unsigned int * indices1, unsigned int size, 
 		unsigned int * byteHistogram) ;
 static bool performPassCheck(int histIndex, unsigned int * & count, unsigned int size, const float * input,
 		unsigned int * byteHistogram) ;
 
 /* 
- * ===  MEMBER FUNCTION CLASS : RadixSortPT  ==============================================
+ * ===  MEMBER FUNCTION CLASS : pt_sort_policy  ======================================
  *         Name:  function
- *    Arguments:  std::vector<std::pair<int,float>> & distances - Vector of distances and
- *                ids.
- *  Description:  Sorts vector of distances based on camera location. Use stl sort.
+ *    Arguments:  
+ *      Returns:  
+ *  Description:  
  * =====================================================================================
  */
 
-void RadixSortPT::sortDistances(std::vector<std::pair<int,float>> & distances) {
-	float * input = new float[distances.size()] ;
-	unsigned int * indices = new unsigned int[distances.size()] ;
-	for (unsigned int i = 0 ; i < distances.size() ; ++i) {
-		input[i] = distances[i].second ;
+std::pair<float*,int*> PTSort::allocate(const std::vector<Centroid> & centroids) {
+	std::pair<float*,int*> ptrs ;
+	ptrs.first = new float[3*centroids.size()] ;
+	ptrs.second = new int[centroids.size()] ;
+	for (int i = 0 ; i < centroids.size() ; ++i) {
+		const float * coords = centroids[i].getCoords() ;
+		ptrs.first[3*i] = coords[0] ;
+		ptrs.first[3*i+1] = coords[1] ;
+		ptrs.first[3*i+2] = coords[2] ;
+		ptrs.second[i] = centroids[i].getID() ;
 	}
-	sortRadices(input,indices,distances.size()) ;
-	std::vector<std::pair<int,float>> temp = distances ; 
-	for (unsigned int i = 0 ; i < distances.size() ; ++i) {
-		temp[i] = distances[indices[i]] ;
-	}
-	distances = temp ;
-	delete [] input ;
-	delete [] indices ;
-	
-}		/* -----  end of member function function  ----- */
+	return ptrs ;
+}
 
 /* 
- * ===  MEMBER FUNCTION CLASS : RadixSortPT  ==============================================
+ * ===  MEMBER FUNCTION CLASS : pt_sort_policy  ======================================
  *         Name:  function
- *    Arguments:  std::vector<std::pair<int,float>> & distances - Vector of distances and
- *                ids.
- *                float & sortTime - Time taken to sort.
- *  Description:  Sorts vector of distances based on camera location. Use std sort.
+ *    Arguments:  
+ *      Returns:  
+ *  Description:  
  * =====================================================================================
  */
 
-void RadixSortPT::sortDistances(std::vector<std::pair<int,float>> & distances, float & sortTime) {
-	float * input = new float[distances.size()] ;
-	unsigned int * indices = new unsigned int[distances.size()] ;
-	for (unsigned int i = 0 ; i < distances.size() ; ++i) {
-		input[i] = distances[i].second ;
-	}
-	Clock clock ;
-	clock.start() ;
-	sortRadices(input,indices,distances.size()) ;
-	clock.stop() ;
-	sortTime = clock.getDuration() ;
-	std::vector<std::pair<int,float>> temp = distances ; 
-	for (unsigned int i = 0 ; i < distances.size() ; ++i) {
-		temp[i] = distances[indices[i]] ;
-	}
-	distances = temp ;
-	delete [] input ;
-	delete [] indices ;
-	
-}		/* -----  end of member function function  ----- */
+void PTSort::sort(const Camera & camera, std::vector<int> & centroidIDsVec, int * centroidIDs, float * centroidPos) {
+	const int size = centroidIDsVec.size() ;
 
-/* 
- * ===  FUNCTION  ======================================================================
- *         Name:  radix_sort11
- *    Arguments:  const float * input - Array of floats.
- *                unsigned int * indicesEx - Indices to be overwitten. Contains final
- *                indices.
- *                unsigned int size - Size of input.
- *  Description:  Performs Peter Terdiman's radix sort algorithm for 4 - 8 bit histograms.
- * =====================================================================================
- */
-
-static void sortRadices(const float * input, unsigned int * indicesEx, unsigned int size) {
+	float * dists = new float[centroidIDsVec.size()] ;
+	Transforms::transformToDistArray(dists,centroidPos,camera,centroidIDsVec.size()) ;
 
 	// Arrays storing index postions. //
 	unsigned int * indices1 = new unsigned int[size] ;
@@ -116,17 +76,19 @@ static void sortRadices(const float * input, unsigned int * indicesEx, unsigned 
 		indices1[i] = i ;
 	}
 	// Offsets is an array of sorting offsets created by summing histograms. //
-	unsigned int offsets[offSize] ;
+	unsigned int offsets[OFF_SIZE] ;
 	// Histogram stores the number of occurrences of a bit pattern (radix) //
-	unsigned int byteHistogram[offSize*4] ;
+	unsigned int byteHistogram[OFF_SIZE*4] ;
 	// Initialise to zero. //
-	memset(byteHistogram,0,sizeof(unsigned int)*histSize) ;
-	memset(offsets,0,sizeof(unsigned int)*offSize) ;
+	memset(byteHistogram,0,sizeof(unsigned int)*HIST_SIZE) ;
+	memset(offsets,0,sizeof(unsigned int)*OFF_SIZE) ;
 
 	// Type cast to unsigned int in order to perform bit ops  //
-	bool isSorted = createHistogram(input,indices1,size,byteHistogram) ;
+	bool isSorted = createHistogram(dists,indices1,size,byteHistogram) ;
 	if (isSorted) {
-		memcpy(indicesEx,indices1,size*sizeof(unsigned int)) ;
+		for (int i = 0 ; i < size ; ++i) {
+			centroidIDsVec[i] = centroidIDs[indices1[i]] ;
+		}
 		return ;
 	}
 
@@ -134,16 +96,16 @@ static void sortRadices(const float * input, unsigned int * indicesEx, unsigned 
 	for (int i = 0 ; i < 4 ; ++i) {
 		unsigned int * count = NULL ;
 		// Only perform a pass if everything has not already been sorted. //
-		bool passState = performPassCheck(i,count,size,input,byteHistogram) ;
+		bool passState = performPassCheck(i,count,size,dists,byteHistogram) ;
 		if(passState) {
 			// Generate write offsets. //
 			offsets[0] = 0 ;
-			for (int j = 1 ; j < offSize ; ++j) {
+			for (int j = 1 ; j < OFF_SIZE ; ++j) {
 				offsets[j] = offsets[j-1] + count[j-1] ;
 			}
 
 			// Overwrite indices. //
-			ubyte * inputBytes = (ubyte*) input ;
+			ubyte * inputBytes = (ubyte*) dists ;
 			unsigned int * indices = indices1 ;
 			unsigned int * indicesEnd = &indices1[size] ;
 			inputBytes += i ;
@@ -155,10 +117,116 @@ static void sortRadices(const float * input, unsigned int * indicesEx, unsigned 
 		}
 	}
 
-	memcpy(indicesEx,indices1,size*sizeof(unsigned int)) ;
+	for (int i = 0 ; i < size ; ++i) {
+		centroidIDsVec[i] = centroidIDs[indices1[i]] ;
+	}
+	
 	delete [] indices1 ;
 	delete [] indices2 ;
 }
+
+
+/* 
+ * ===  MEMBER FUNCTION CLASS : pt_sort_policy  ======================================
+ *         Name:  function
+ *    Arguments:  
+ *      Returns:  
+ *  Description:  
+ * =====================================================================================
+ */
+
+void PTSort::benchSort(const Camera & camera, std::vector<int> & centroidIDsVec, int * centroidIDs, float * centroidPos, std::vector<float> & times) {
+	const int size = centroidIDsVec.size() ;
+
+	Clock clock ;
+	clock.start() ;
+	float * dists = new float[centroidIDsVec.size()] ;
+	Transforms::transformToDistArray(dists,centroidPos,camera,centroidIDsVec.size()) ;
+	clock.stop() ;
+	float transformTime = clock.getDuration() ;
+
+	clock.start() ;
+	// Arrays storing index postions. //
+	unsigned int * indices1 = new unsigned int[size] ;
+	unsigned int * indices2 = new unsigned int[size] ;
+	for (int i = 0 ; i < size ; ++i) {
+		indices2[i] = i ;
+		indices1[i] = i ;
+	}
+	// Offsets is an array of sorting offsets created by summing histograms. //
+	unsigned int offsets[OFF_SIZE] ;
+	// Histogram stores the number of occurrences of a bit pattern (radix) //
+	unsigned int byteHistogram[OFF_SIZE*4] ;
+	// Initialise to zero. //
+	memset(byteHistogram,0,sizeof(unsigned int)*HIST_SIZE) ;
+	memset(offsets,0,sizeof(unsigned int)*OFF_SIZE) ;
+
+	// Type cast to unsigned int in order to perform bit ops  //
+	bool isSorted = createHistogram(dists,indices1,size,byteHistogram) ;
+	if (isSorted) {
+		for (int i = 0 ; i < size ; ++i) {
+			centroidIDsVec[i] = centroidIDs[indices1[i]] ;
+		}
+		return ;
+	}
+
+	// For each histogram perform the sort. //
+	for (int i = 0 ; i < 4 ; ++i) {
+		unsigned int * count = NULL ;
+		// Only perform a pass if everything has not already been sorted. //
+		bool passState = performPassCheck(i,count,size,dists,byteHistogram) ;
+		if(passState) {
+			// Generate write offsets. //
+			offsets[0] = 0 ;
+			for (int j = 1 ; j < OFF_SIZE ; ++j) {
+				offsets[j] = offsets[j-1] + count[j-1] ;
+			}
+
+			// Overwrite indices. //
+			ubyte * inputBytes = (ubyte*) dists ;
+			unsigned int * indices = indices1 ;
+			unsigned int * indicesEnd = &indices1[size] ;
+			inputBytes += i ;
+			while (indices != indicesEnd) {
+				unsigned int id = *indices++ ;
+				indices2[offsets[inputBytes[id<<2]]++] = id ;
+			}
+			std::swap(indices1,indices2) ;
+		}
+	}
+	clock.stop() ;
+	float sortTime = clock.getDuration() ;
+
+	clock.start() ;
+	for (int i = 0 ; i < size ; ++i) {
+		centroidIDsVec[i] = centroidIDs[indices1[i]] ;
+	}
+	
+	delete [] indices1 ;
+	delete [] indices2 ;
+	clock.stop() ;
+	float copyTime = clock.getDuration() ;
+
+	times.push_back(sortTime) ;
+	times.push_back(sortTime+transformTime) ;
+	times.push_back(sortTime+transformTime+copyTime) ;
+}
+
+
+/* 
+ * ===  MEMBER FUNCTION CLASS : pt_sort_policy  ======================================
+ *         Name:  function
+ *    Arguments:  
+ *      Returns:  
+ *  Description:  
+ * =====================================================================================
+ */
+
+void PTSort::deAllocate(float * centroidPos, int * centroidIDs) {
+	delete [] centroidPos ;
+	delete [] centroidIDs ;
+}
+
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -222,7 +290,7 @@ static bool createHistogram(const float * buffer, unsigned int * indices1, unsig
  *         Name:  radix_sort8
  *    Arguments:  int histIndex - The index of the histogram.
  *                unsigned int * & count - Pointer to count.
- *                unsigned int size - Number of triangle ids.
+ *                unsigned int size - Number of centroid ids.
  *                const float * input - Input float values.
  *                unsigned int * byteHistogram - Histogram array.
  *      Returns:  True or False.
@@ -244,4 +312,3 @@ static bool performPassCheck(int histIndex, unsigned int * & count, unsigned int
 	}
 }
 
-}

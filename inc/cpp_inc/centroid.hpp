@@ -1,12 +1,12 @@
-#ifndef TRIANGLE_HPP_WKAZPM6H
-#define TRIANGLE_HPP_WKAZPM6H
+#ifndef CENTROID_HPP_WKAZPM6H
+#define CENTROID_HPP_WKAZPM6H
 
 /*
  * =====================================================================================
  *
- *       Filename:  triangle.hpp
+ *       Filename:  centroid.hpp
  *
- *    Description:  Header file for triangle class.
+ *    Description:  Header file for centroid class.
  *
  *        Version:  1.0
  *        Created:  07/06/16 18:20:28
@@ -22,19 +22,19 @@
 
 /* 
  * ===  CLASS  =========================================================================
- *         Name:  Triangle
- *       Fields:  id - Id of triangle
- *                coords - Co-ordinates of triangle.
- *  Description:  Storage class for triangle data. Can be translated to camera space.
+ *         Name:  Centroid
+ *       Fields:  id - Id of centroid
+ *                coords - Co-ordinates of centroid.
+ *  Description:  Storage class for centroid data. Can be translated to camera space.
  * =====================================================================================
  */
 
-class Triangle {
+class Centroid {
  public:
-	Triangle() { ; } ;
-	Triangle(const float & x, const float & y, const float & z, int id) ;
-	Triangle(const Triangle & obj) ;
-	virtual ~Triangle() ;
+	Centroid() { ; } ;
+	Centroid(const float & x, const float & y, const float & z, int id) ;
+	Centroid(const Centroid & obj) ;
+	virtual ~Centroid() ;
 	const float * getCoords() const {return coords ;} ;
 	unsigned int getID() const {return id ;} ;
 	void setCoords(const float & x, const float & y, const float & z) ;
@@ -42,6 +42,6 @@ class Triangle {
  private:
 	unsigned int id ;
 	float coords[3] ;
-} ;		/* -----  end of class Triangle  ----- */
+} ;		/* -----  end of class Centroid  ----- */
 
-#endif /* end of include guard: TRIANGLE_HPP_WKAZPM6H */
+#endif /* end of include guard: CENTROID_HPP_WKAZPM6H */

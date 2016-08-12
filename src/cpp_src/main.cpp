@@ -28,8 +28,8 @@
 #include "../../inc/cpp_inc/transforms.hpp"
 #include "../../inc/cpp_inc/camera.hpp"
 #include "../../inc/cpp_inc/test_funcs.hpp"
-#include "../../inc/cpp_inc/sort_algs.hpp"
 #include "../../inc/cpp_inc/clock.hpp"
+#include "../../inc/cpp_inc/centroid_sorter.hpp"
 
 // Options //
 CFlag verbose("verbose",false,"v") ;
@@ -49,25 +49,34 @@ int main(int argc, char *argv[]) {
 
 	// Process Command Line Options //
 	CommandParser::processArgs(argc, argv, options) ;
-	std::vector<Triangle> triangles ;
+	std::vector<Centroid> centroids ;
 	std::vector<Camera> cameras ;
-	FileLoader::loadFile(triangles,cameras,filename.getValue()) ;
-	std::vector<Triangle> temp = triangles ;
+	FileLoader::loadFile(centroids,cameras,filename.getValue()) ;
 
-	GPUSorts::MerrelRadixGPUSort merSorter ;
-	//GPUSorts::ThrustGPUSort tSorter ;
+	std::unordered_map<int,Centroid> centroidsMap ;
+	for (int i = 0 ; i < centroids.size() ; ++i) {
+		centroidsMap[centroids[i].getID()] = centroids[i] ;
+	}
 
+	std::vector<Centroid> checkVector(centroids.size()) ;
+	std::vector<std::pair<int,float>> dists(centroids.size()) ;
+	std::vector<int> ids ;
 	Clock myClock ;
-	myClock.start() ;
-	merSorter.sortTriangles(temp,cameras[0]) ; 
-	myClock.stop() ;
-	std::cout << myClock.getDuration() << std::endl;
-	temp = triangles ;
-	myClock.start() ;
-	//tSorter.sortTriangles(temp,cameras[0]) ; 
-	myClock.stop() ;
-	std::cout << myClock.getDuration() << std::endl;
 
+	CentroidSorter<ImplRadixSort> implSorter(centroids) ;
+	for (int j = 0 ; j < cameras.size() ; ++j) {
+		myClock.start() ;
+		ids = implSorter.sort(cameras[j]) ;
+		myClock.stop() ;
+		for (int i = 0 ; i < centroids.size() ; ++i) {
+			checkVector[i] = centroidsMap[ids[i]] ;
+		}
+		Transforms::transformToDistVec(dists,checkVector,cameras[j]) ;
+		if (!Tests::checkSorted(dists)) {
+			std::cout << j << std::endl;
+		}
+		std::cout << myClock.getDuration() << std::endl;
+	}
 	return EXIT_SUCCESS ;
 }
 

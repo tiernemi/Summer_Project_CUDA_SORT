@@ -3,7 +3,7 @@
  *
  *       Filename:  fileloader.cpp
  *
- *    Description:  FileLoader helper class used to load in triangle and camera data.
+ *    Description:  FileLoader helper class used to load in centroid and camera data.
  *
  *        Version:  1.0
  *        Created:  08/06/16 12:00:11
@@ -21,20 +21,20 @@
 
 // Custom Headers //
 #include "../../inc/cpp_inc/fileloader.hpp"
-#include "../../inc/cpp_inc/triangle.hpp"
+#include "../../inc/cpp_inc/centroid.hpp"
 
 /* 
  * ===  MEMBER FUNCTION CLASS : FileLoader  ===========================================
  *         Name:  loadFile
- *    Arguments:  std::vector<Triangle> & cameraPos - Array containing triangle data.
+ *    Arguments:  std::vector<Centroid> & cameraPos - Array containing centroid data.
  *                std::vector<std::vector<float>> & cameraPos - Array containing camera
  *                positions.
  *                const std::string & filename - Name of the file.
- *  Description:  Loads the triangle and camera data from the file specified.
+ *  Description:  Loads the centroid and camera data from the file specified.
  * =====================================================================================
  */
 
-void FileLoader::loadFile(std::vector<Triangle> & data, std::vector<Camera> & cameraPos, const std::string & filename){
+void FileLoader::loadFile(std::vector<Centroid> & data, std::vector<Camera> & cameraPos, const std::string & filename){
 	std::ifstream input(filename) ;
 	if (!input.is_open()) {
 		std::cerr << "Error! file does not exist" << std::endl;
@@ -47,21 +47,21 @@ void FileLoader::loadFile(std::vector<Triangle> & data, std::vector<Camera> & ca
 	}
 	input >> numPoints ;
 	data.resize(numPoints) ;
-	loadTriangles(data, input) ;
+	loadCentroids(data, input) ;
 	loadCameraPos(cameraPos, input) ;
 	input.close() ;
 }
 
 /* 
  * ===  MEMBER FUNCTION CLASS : fileloader  ==========================================
- *         Name:  loadTriangles
- *    Arguments:  std::vector<Triangle> & cameraPos - Array containing triangle data.
+ *         Name:  loadCentroids
+ *    Arguments:  std::vector<Centroid> & cameraPos - Array containing centroid data.
  *                std::ifstream & input - Input stream of file.
- *  Description:  Loads in triangle positions.
+ *  Description:  Loads in centroid positions.
  * =====================================================================================
  */
 
-void FileLoader::loadTriangles(std::vector<Triangle> & data, std::ifstream & input) {
+void FileLoader::loadCentroids(std::vector<Centroid> & data, std::ifstream & input) {
 	unsigned int id ;
 	float coBuffer[3] ;
 	for (unsigned int i = 0 ; i < data.size() ; ++i) {

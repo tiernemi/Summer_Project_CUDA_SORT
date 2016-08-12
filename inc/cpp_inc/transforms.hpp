@@ -19,13 +19,14 @@
  * =====================================================================================
  */
 
-#include "triangle.hpp"
+#include "centroid.hpp"
 
 namespace Transforms {
 	void transformToDistVec(std::vector<std::pair<int,float> > & distances, 
-			const std::vector<Triangle> & triangles, const Camera & camera) ;
+			const std::vector<Centroid> & centroids, const Camera & camera) ;
+	void transformToDistArray(float * dists, float * coords, const Camera & camera, const int numElements) ;
 //	void transformToDistMap(std::unordered_map<int,float> & distances, 
-	//		const std::vector<Triangle> & triangles, const Camera & camera) ;
+	//		const std::vector<Centroid> & centroids, const Camera & camera) ;
 }
 
 #endif /* end of include guard: TRANSFORMS_HPP_M98NPKHR */

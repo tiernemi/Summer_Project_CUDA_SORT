@@ -25,7 +25,6 @@
 
 // Custom Headers //
 #include "../../inc/cpp_inc/test_funcs.hpp"
-#include "../../inc/cpp_inc/stl_sort.hpp"
 #include "../../inc/cpp_inc/transforms.hpp"
 
 namespace Tests {
@@ -38,9 +37,9 @@ static unsigned long int merge(std::vector<std::pair<int,float>> & distances, st
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  calcPercentSorted
- *    Arguments:  const std::vector<Triangle> & triangles - Vector of triangles
+ *    Arguments:  const std::vector<Centroid> & centroids - Vector of centroids
  *                const Camera & camera - Camera
- *      Returns:  The sorting score of triangles relative to camera, 0 sorted 1 
+ *      Returns:  The sorting score of centroids relative to camera, 0 sorted 1 
  *                not sorted.
  *  Description:  Uses mergesort to count the number of inversions in dataset. This
  *                is normalised by NCr2 to generate a sorting score. 0 is highly sorted
@@ -49,19 +48,20 @@ static unsigned long int merge(std::vector<std::pair<int,float>> & distances, st
  * =====================================================================================
  */
 
-float calcPercentSorted(const std::vector<Triangle> & triangles, const Camera & camera) {
-	std::vector<std::pair<int,float>> distances(triangles.size()) ;
-	Transforms::transformToDistVec(distances,triangles,camera) ;
+float calcPercentSorted(const std::vector<Centroid> & centroids, const Camera & camera) {
+	std::vector<std::pair<int,float>> distances(centroids.size()) ;
+	Transforms::transformToDistVec(distances,centroids,camera) ;
 	std::vector<std::pair<int,float>> temp = distances ;
 	unsigned long int numInvers = merge_inv(distances,temp,0,distances.size()-1) ;
 	return numInvers*(2.f/float((distances.size()-1)*(distances.size()))) ;
 
 }		/* -----  end of function calcPercentSorted  ----- */
 
+/*  
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  makePercentSorted
- *    Arguments:  std::vector<Triangle> & triangles - Triangles which will be inversed
+ *    Arguments:  std::vector<Centroid> & centroids - Centroids which will be inversed
  *                until the desired sort score is reached.
  *                Camera & camera - Camera to be sorted relative to.
  *                float score - Desired sort score 0 is sorted ascending, 0.5 is random and
@@ -74,24 +74,23 @@ float calcPercentSorted(const std::vector<Triangle> & triangles, const Camera & 
  *                array. The algorithm is is stochastic in nature and thus only approximately
  *                gives the desired sort score. This should "randomly sort" array.
  * =====================================================================================
- */
+ 
 
-void makePercentSorted(std::vector<Triangle> & triangles, Camera & camera, float score, 
+void makePercentSorted(std::vector<Centroid> & centroids, Camera & camera, float score, 
 		std::mt19937 & gen) {
 	// Presort the distances. //
-	CPUSorts::STLSort stlsorter ;
-	stlsorter.sortTriangles(triangles,camera) ;
-	std::vector<std::pair<int,float>> sortedDistances(triangles.size()) ;
-	Transforms::transformToDistVec(sortedDistances,triangles,camera) ;
+//	CentroidSorter<STLSort> stlSorter(centroids) ;
+	std::vector<std::pair<int,float>> sortedDistances(centroids.size()) ;
+	Transforms::transformToDistVec(sortedDistances,centroids,camera) ;
 	// Index selection distribution. //
-	std::uniform_int_distribution<int> indices(0,triangles.size()-1) ;
+	std::uniform_int_distribution<int> indices(0,centroids.size()-1) ;
 	// This is the number of inverses required for a given score. //
-	unsigned long int targetNumIvers = score*((triangles.size())*(triangles.size()-1))/2 ;
+	unsigned long int targetNumIvers = score*((centroids.size())*(centroids.size()-1))/2 ;
 	unsigned long int numInvers = 0 ;
 	// If >0.5 approach from reverse sorted array. //
 	if (score > 0.5) {
 		std::reverse(sortedDistances.begin(), sortedDistances.end()) ;
-		numInvers = ((triangles.size())*(triangles.size()-1))/2 ;
+		numInvers = ((centroids.size())*(centroids.size()-1))/2 ;
 		while (numInvers > targetNumIvers) {
 			int indexCand1 = indices(gen) ;
 			int indexCand2 = indices(gen) ;
@@ -182,13 +181,13 @@ void makePercentSorted(std::vector<Triangle> & triangles, Camera & camera, float
 		}
 	}
 
-	std::vector<Triangle> temp = triangles ;
-	for (unsigned int i = 0 ; i < triangles.size() ; ++i) {
-		temp[i] = triangles[sortedDistances[i].first] ;
+	std::vector<Centroid> temp = centroids ;
+	for (unsigned int i = 0 ; i < centroids.size() ; ++i) {
+		temp[i] = centroids[sortedDistances[i].first] ;
 	}
 
-	triangles = temp ;
-}		/* -----  end of function makePercentSorted  ----- */
+	centroids = temp ;
+}		 -----  end of function makePercentSorted  ----- */
 
 /* 
  * ===  FUNCTION  ======================================================================

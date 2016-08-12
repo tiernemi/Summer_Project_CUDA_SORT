@@ -22,7 +22,7 @@
 #include <fstream>
 
 // Custom Headers //
-#include "triangle.hpp"
+#include "centroid.hpp"
 #include "camera.hpp"
 
 /* 
@@ -34,9 +34,9 @@
 
 class FileLoader {
  public:
-	static void loadFile(std::vector<Triangle> & data, std::vector<Camera> & cameraPos, const std::string & filename) ;
+	static void loadFile(std::vector<Centroid> & data, std::vector<Camera> & cameraPos, const std::string & filename) ;
  private:
-	static void loadTriangles(std::vector<Triangle> & data, std::ifstream & input) ;
+	static void loadCentroids(std::vector<Centroid> & data, std::ifstream & input) ;
 	static void loadCameraPos(std::vector<Camera> & cameraPos, std::ifstream & input) ;
 } ;		/* -----  end of class FileLoader  ----- */
 

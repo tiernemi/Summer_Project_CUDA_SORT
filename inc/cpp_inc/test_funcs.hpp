@@ -21,14 +21,14 @@
 #include <vector>
 #include <unordered_map>
 #include <random>
-#include "triangle.hpp"
+#include "centroid.hpp"
 #include "camera.hpp"
 
 namespace Tests {
 
 
-float calcPercentSorted(const std::vector<Triangle> & triangles, const Camera & camera) ;
-void makePercentSorted(std::vector<Triangle> & triangles, Camera & camera, float percent, std::mt19937 & gen) ;
+float calcPercentSorted(const std::vector<Centroid> & centroids, const Camera & camera) ;
+void makePercentSorted(std::vector<Centroid> & centroids, Camera & camera, float percent, std::mt19937 & gen) ;
 
 /* 
  * ===  FUNCTION  ======================================================================

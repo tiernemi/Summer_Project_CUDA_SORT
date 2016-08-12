@@ -21,4 +21,7 @@
 __global__ void cudaCalcDistanceSq(float * gpuTriCo, float * gpuCamCo, float * gpuDistancesSq, 
 		 int * gpuTriIds, int numTriangles, int numCameras) ;
 
+__global__ void cudaCalcDistanceSq(float * gpuCenCo, float * gpuCamCo, float * gpuDistancesSq, 
+		 int numCentroids) ;
+
 #endif /* end of header gaurd CUDA_TRANSFORMS_SUM_CU_T02OEQEL */
