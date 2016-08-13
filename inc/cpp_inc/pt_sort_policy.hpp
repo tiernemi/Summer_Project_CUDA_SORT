@@ -6,15 +6,14 @@
  *
  *       Filename:  pt_sort_policy.hpp
  *
- *    Description:  
+ *    Description:  Header for pt radix sort.
  *
  *        Version:  1.0
  *        Created:  11/08/16 10:58:05
  *       Revision:  none
- *       Compiler:  gcc
+ *       Compiler:  g++
  *
  *         Author:  Michael Tierney (MT), tiernemi@tcd.ie
- *   Organization:  
  *
  * =====================================================================================
  */
@@ -25,8 +24,7 @@
 /* 
  * ===  CLASS  =========================================================================
  *         Name:  PTSort
- *       Fields:  
- *  Description:  
+ *  Description:  Pierre Terdiman's radix sort policy. Uses CPU.
  * =====================================================================================
  */
 

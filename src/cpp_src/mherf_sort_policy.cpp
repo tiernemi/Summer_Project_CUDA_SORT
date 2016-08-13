@@ -3,7 +3,7 @@
  *
  *       Filename:  radix_sort_hoff.cpp
  *
- *    Description:  Implementaion of radix sort on cpu.
+ *    Description:  Implementaion of histogram radix sort on cpu. Written by Michael Herf.
  *
  *        Version:  1.0
  *        Created:  2016-06-15 12:42
@@ -47,11 +47,11 @@ typedef const char *cpointer;
 #define _2(x)	(x >> 22 )
 
 /* 
- * ===  MEMBER FUNCTION CLASS : pt_sort_policy  ======================================
- *         Name:  function
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ * ===  MEMBER FUNCTION : MHerfSort  ===================================================
+ *         Name:  allocate
+ *    Arguments:  const std::vector<Centroid> & centroids - Centroid data to allocate.
+ *      Returns:  Pair of pointers to centroid position data and ids.
+ *  Description:  Allocates position and id data on the CPU.
  * =====================================================================================
  */
 
@@ -70,15 +70,14 @@ std::pair<float*,int*> MHerfSort::allocate(const std::vector<Centroid> & centroi
 }
 
 /* 
- * ===  FUNCTION  ======================================================================
- *         Name:  sortRadices
- *    Arguments:  const float * dists - Input distance data
- *                unsigned int * indicesEx - Indices array to be overwritten. 
- *                unsigned int size - Number of distance points.
- *  Description:  Sorts 3 - 11 bit radices using Hoff's algorithm. Indices are outputted
- *                and not distances. First histograms are filled, then offsets are computed
- *                by summing histograms. These offsets are used to write back and overwrite
- *                indices.
+ * ===  MEMBER FUNCTION : MHerfSort  ======================================================
+ *         Name:  sort
+ *    Arguments:  const Camera & camera, - Camera to sort relative to.
+ *                std::vector<int> & centroidIDsVec, - Array to write ids to.
+ *                int * centroidIDs - Array of centroid ids (GPU).
+ *                float * centroidPos - Array of centroid positions (GPU).
+ *  Description:  Transforms centorid positions to distances and sorts these keys
+ *                and ids (values) using a histogram radix sort written by Michael Herf.
  * =====================================================================================
  */
 
@@ -166,15 +165,16 @@ void MHerfSort::sort(const Camera & camera, std::vector<int> & centroidIDsVec, i
 }
 
 /* 
- * ===  FUNCTION  ======================================================================
- *         Name:  sortRadices
- *    Arguments:  const float * dists - Input distance data
- *                unsigned int * indicesEx - Indices array to be overwritten. 
- *                unsigned int size - Number of distance points.
- *  Description:  Sorts 3 - 11 bit radices using Hoff's algorithm. Indices are outputted
- *                and not distances. First histograms are filled, then offsets are computed
- *                by summing histograms. These offsets are used to write back and overwrite
- *                indices.
+ * ===  MEMBER FUNCTION : MHerfSort  ======================================================
+ *         Name:  benchSort
+ *    Arguments:  const Camera & camera, - Camera to sort relative to.
+ *                std::vector<int> & centroidIDsVec, - Array to write ids to.
+ *                int * centroidIDs - Array of centroid ids (GPU).
+ *                float * centroidPos - Array of centroid positions (GPU).
+ *                std::vector<float> & times - Vector used to store timings.
+ *  Description:  Transforms centorid positions to distances and sorts these keys
+ *                and ids (values) using a histogram radix sort written by Michael Herf.
+ *                This version also benchmarks.
  * =====================================================================================
  */
 
@@ -276,11 +276,11 @@ void MHerfSort::benchSort(const Camera & camera, std::vector<int> & centroidIDsV
 }
 
 /* 
- * ===  MEMBER FUNCTION CLASS : pt_sort_policy  ======================================
- *         Name:  function
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ * ===  MEMBER FUNCTION : MHerfSort  =================================================
+ *         Name:  deAllocate
+ *    Arguments:  float * centroidPos - Centroid position location.
+ *                int * centroidIDs - Centroid ids location.
+ *  Description:  Frees data sotred at pointers.
  * =====================================================================================
  */
 

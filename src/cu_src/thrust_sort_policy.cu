@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename:  thrust_gpu_sort.cpp
+ *       Filename:  thrust_sort_policy.cpp
  *
  *    Description:  Implementaion of thrust sort on gpu.
  *
@@ -53,6 +53,14 @@ struct calcDistance : public thrust::binary_function<Tuple3f,Tuple3f,float> {
 	}
 } ;
 
+/* 
+ * ===  MEMBER FUNCTION : ThrustSort ==================================================
+ *         Name:  allocate
+ *    Arguments:  const std::vector<Centroid> & centroids - Centroid data to allocate.
+ *      Returns:  Pair of pointers to centroid position data and ids.
+ *  Description:  Allocates position and id data on the GPU.
+ * =====================================================================================
+ */
 
 std::pair<float*,int*> ThrustSort::allocate(const std::vector<Centroid> & centroids) {
 	std::pair<float*,int*> ptrs ;
@@ -74,6 +82,17 @@ std::pair<float*,int*> ThrustSort::allocate(const std::vector<Centroid> & centro
 	return ptrs ;
 }
 
+/* 
+ * ===  MEMBER FUNCTION : ThrustSort ==================================================
+ *         Name:  sort
+ *    Arguments:  const Camera & camera, - Camera to sort relative to.
+ *                std::vector<int> & centroidIDsVec, - Array to write ids to.
+ *                int * centroidIDs - Array of centroid ids (GPU).
+ *                float * centroidPos - Array of centroid positions (GPU).
+ *  Description:  Transforms centorid positions to distances and sorts these keys
+ *                and ids (values) using thrust sort by key.
+ * =====================================================================================
+ */
 
 void ThrustSort::sort(const Camera & camera, std::vector<int> & centroidIDsVec, int * centroidIDs, float * centroidPos) {
 	const int numCentroids = centroidIDsVec.size() ;
@@ -125,6 +144,20 @@ void ThrustSort::sort(const Camera & camera, std::vector<int> & centroidIDsVec, 
 
 	thrust::device_free(devIDs) ;
 }
+
+/* 
+ * ===  MEMBER FUNCTION : ThrustSort ==================================================
+ *         Name:  benchSort
+ *    Arguments:  const Camera & camera, - Camera to sort relative to.
+ *                std::vector<int> & centroidIDsVec, - Array to write ids to.
+ *                int * centroidIDs - Array of centroid ids (GPU).
+ *                float * centroidPos - Array of centroid positions (GPU).
+ *                std::vector<float> & times - Vector used to store timings.
+ *  Description:  Transforms centorid positions to distances and sorts these keys
+ *                and ids (values) using thrust sort by key. This version benchmarks 
+ *                aswell.
+ * =====================================================================================
+ */
 
 void ThrustSort::benchSort(const Camera & camera, std::vector<int> & centroidIDsVec, int * centroidIDs, float * centroidPos, std::vector<float> & times) {
 
@@ -201,7 +234,14 @@ void ThrustSort::benchSort(const Camera & camera, std::vector<int> & centroidIDs
 	times.push_back((sortTime+transformTime+copyTime)/1E3) ;
 }
 
-
+/* 
+ * ===  MEMBER FUNCTION : ThrustSort ==================================================
+ *         Name:  deAllocate
+ *    Arguments:  float * centroidPos - Centroid position location.
+ *                int * centroidIDs - Centroid ids location.
+ *  Description:  Frees data sotred at pointers.
+ * =====================================================================================
+ */
 
 void ThrustSort::deAllocate(float * centroidPos, int * centroidIDs) {
 	cudaFree(centroidPos) ;

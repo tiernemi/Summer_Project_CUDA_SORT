@@ -3,7 +3,7 @@
  *
  *       Filename:  pt_sort_policy.cpp
  *
- *    Description:  
+ *    Description:  Source file for histogram sort written by Pierre Terdiman.
  *
  *        Version:  1.0
  *        Created:  11/08/16 11:01:19
@@ -31,11 +31,11 @@ static bool performPassCheck(int histIndex, unsigned int * & count, unsigned int
 		unsigned int * byteHistogram) ;
 
 /* 
- * ===  MEMBER FUNCTION CLASS : pt_sort_policy  ======================================
- *         Name:  function
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ * ===  MEMBER FUNCTION : PTSort  ======================================================
+ *         Name:  allocate
+ *    Arguments:  const std::vector<Centroid> & centroids - Centroid data to allocate.
+ *      Returns:  Pair of pointers to centroid position data and ids.
+ *  Description:  Allocates position and id data on the CPU.
  * =====================================================================================
  */
 
@@ -54,11 +54,14 @@ std::pair<float*,int*> PTSort::allocate(const std::vector<Centroid> & centroids)
 }
 
 /* 
- * ===  MEMBER FUNCTION CLASS : pt_sort_policy  ======================================
- *         Name:  function
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ * ===  MEMBER FUNCTION : PTSort  ======================================================
+ *         Name:  sort
+ *    Arguments:  const Camera & camera, - Camera to sort relative to.
+ *                std::vector<int> & centroidIDsVec, - Array to write ids to.
+ *                int * centroidIDs - Array of centroid ids (GPU).
+ *                float * centroidPos - Array of centroid positions (GPU).
+ *  Description:  Transforms centorid positions to distances and sorts these keys
+ *                and ids (values) using a histogram radix sort written by Pierre Terdiman.
  * =====================================================================================
  */
 
@@ -125,13 +128,17 @@ void PTSort::sort(const Camera & camera, std::vector<int> & centroidIDsVec, int 
 	delete [] indices2 ;
 }
 
-
 /* 
- * ===  MEMBER FUNCTION CLASS : pt_sort_policy  ======================================
- *         Name:  function
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ * ===  MEMBER FUNCTION : PTSort  ======================================================
+ *         Name:  benchSort
+ *    Arguments:  const Camera & camera, - Camera to sort relative to.
+ *                std::vector<int> & centroidIDsVec, - Array to write ids to.
+ *                int * centroidIDs - Array of centroid ids (GPU).
+ *                float * centroidPos - Array of centroid positions (GPU).
+ *                std::vector<float> & times - Vector used to store timings.
+ *  Description:  Transforms centorid positions to distances and sorts these keys
+ *                and ids (values) using a histogram radix sort written by Pierre Terdiman.
+ *                This version also benchmarks.
  * =====================================================================================
  */
 
@@ -212,13 +219,12 @@ void PTSort::benchSort(const Camera & camera, std::vector<int> & centroidIDsVec,
 	times.push_back(sortTime+transformTime+copyTime) ;
 }
 
-
 /* 
- * ===  MEMBER FUNCTION CLASS : pt_sort_policy  ======================================
- *         Name:  function
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ * ===  MEMBER FUNCTION : PTSort  ======================================================
+ *         Name:  deAllocate
+ *    Arguments:  float * centroidPos - Centroid position location.
+ *                int * centroidIDs - Centroid ids location.
+ *  Description:  Frees data sotred at pointers.
  * =====================================================================================
  */
 
@@ -226,7 +232,6 @@ void PTSort::deAllocate(float * centroidPos, int * centroidIDs) {
 	delete [] centroidPos ;
 	delete [] centroidIDs ;
 }
-
 
 /* 
  * ===  FUNCTION  ======================================================================

@@ -23,26 +23,25 @@
  *    Arguments:  float * gpuTriCo - Pointer to gpu triangle co-ordinates.
  *                float * gpuCamCo - Pointer to camera co-ordinates.
  *                float * gpuDistances - Pointer to distances vector which will be
- *                int * gpuTriIds - Indices of triangles. (May be shuffled).
+ *                int * gpuTriIds - Indices of centroids. (May be shuffled).
  *                written into an eventually sorted.
- *                int numTriangles - Number of triangles in data set.
+ *                int numCentroids - Number of centroids in data set.
  *                int numCameras - Number of cameras to sort relative to.
  *  Description:  Calculates the distance squared of each point relative to the camera.
- *                Reads are clustered in such a way to promote coalesced reading.
  * =====================================================================================
  */
 
 __global__ void cudaCalcDistanceSq(float * gpuTriCo, float * gpuCamCo, float * gpuDistancesSq, int * gpuTriIds, 
-		int numTriangles, int numCameras) {
+		int numCentroids, int numCameras) {
 
 	// Grid stride loop. //
-	for (int i = threadIdx.x + blockDim.x * blockIdx.x  ; i < numTriangles ; 
+	for (int i = threadIdx.x + blockDim.x * blockIdx.x  ; i < numCentroids ; 
 			i += blockDim.x*gridDim.x) {
 		int index = gpuTriIds[i] ;
-		// Coalesced reading of triangles. //
+		// Coalesced reading of centroids. //
 		float xt = gpuTriCo[index] ;
-		float yt = gpuTriCo[index+numTriangles] ;
-		float zt = gpuTriCo[index+(numTriangles*2)] ;
+		float yt = gpuTriCo[index+numCentroids] ;
+		float zt = gpuTriCo[index+(numCentroids*2)] ;
 		// Coalesced reading of cameras. //
 		float xc = gpuCamCo[0] ;
 		float yc = gpuCamCo[numCameras] ;
@@ -62,10 +61,7 @@ __global__ void cudaCalcDistanceSq(float * gpuTriCo, float * gpuCamCo, float * g
  *    Arguments:  float * gpuTriCo - Pointer to gpu triangle co-ordinates.
  *                float * gpuCamCo - Pointer to camera co-ordinates.
  *                float * gpuDistances - Pointer to distances vector which will be
- *                int * gpuTriIds - Indices of triangles. (May be shuffled).
- *                written into an eventually sorted.
- *                int numTriangles - Number of triangles in data set.
- *                int numCameras - Number of cameras to sort relative to.
+ *                int numCentroids - Number of centroids in data set
  *  Description:  Calculates the distance squared of each point relative to the camera.
  *                Reads are clustered in such a way to promote coalesced reading.
  * =====================================================================================
@@ -77,7 +73,7 @@ __global__ void cudaCalcDistanceSq(float * gpuCenCo, float * gpuCamCo, float * g
 
 	for (int i = threadIdx.x + blockDim.x * blockIdx.x  ; i < numCentroids ; 
 			i += blockDim.x*gridDim.x) {
-		// Coalesced reading of triangles. //
+		// Coalesced reading of centroids. //
 		float xt = gpuCenCo[i] ;
 		float yt = gpuCenCo[i+numCentroids] ;
 		float zt = gpuCenCo[i+(numCentroids*2)] ;

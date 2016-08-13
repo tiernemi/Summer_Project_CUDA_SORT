@@ -1,9 +1,9 @@
 /*
  * =====================================================================================
  *
- *       Filename:  radix_sort.cu
+ *       Filename:  cub_sort_policy.cu
  *
- *    Description:  CUDA code for radix sort on gpu.
+ *    Description:  CUDA code for cub radix sort on gpu.
  *
  *        Version:  1.0
  *        Created:  07/06/16 16:33:20
@@ -24,6 +24,14 @@
 
 #define WARPSIZE 32
 
+/* 
+ * ===  MEMBER FUNCTION : CUBSort ======================================================
+ *         Name:  allocate
+ *    Arguments:  const std::vector<Centroid> & centroids - Centroid data to allocate.
+ *      Returns:  Pair of pointers to centroid position data and ids.
+ *  Description:  Allocates position and id data on the GPU.
+ * =====================================================================================
+ */
 
 std::pair<float*,int*> CUBSort::allocate(const std::vector<Centroid> & centroids) {
 	std::pair<float*,int*> ptrs ;
@@ -44,6 +52,18 @@ std::pair<float*,int*> CUBSort::allocate(const std::vector<Centroid> & centroids
 	cudaMemcpy(ptrs.second, cenIds.data(), sizeof(int)*cenIds.size(), cudaMemcpyHostToDevice) ;
 	return ptrs ;
 }
+
+/* 
+ * ===  MEMBER FUNCTION : CUBSort ======================================================
+ *         Name:  sort
+ *    Arguments:  const Camera & camera, - Camera to sort relative to.
+ *                std::vector<int> & centroidIDsVec, - Array to write ids to.
+ *                int * centroidIDs - Array of centroid ids (GPU).
+ *                float * centroidPos - Array of centroid positions (GPU).
+ *  Description:  Transforms centorid positions to distances and sorts these keys
+ *                and ids (values) using the CUB libraries radix sort.
+ * =====================================================================================
+ */
 
 void CUBSort::sort(const Camera & camera, std::vector<int> & centroidIDsVec, int * centroidIDs, float * centroidPos) {
 
@@ -88,6 +108,20 @@ void CUBSort::sort(const Camera & camera, std::vector<int> & centroidIDsVec, int
 	cudaFree(gpuDistancesSqBuf2) ;
 	cudaFree(tempStorage) ;
 }
+
+/* 
+ * ===  MEMBER FUNCTION : CUBSort ======================================================
+ *         Name:  sort
+ *    Arguments:  const Camera & camera, - Camera to sort relative to.
+ *                std::vector<int> & centroidIDsVec, - Array to write ids to.
+ *                int * centroidIDs - Array of centroid ids (GPU).
+ *                float * centroidPos - Array of centroid positions (GPU).
+ *                std::vector<float> & times - Vector used to store timings.
+ *  Description:  Transforms centorid positions to distances and sorts these keys
+ *                and ids (values) using the CUB libraries radix sort.
+ *                This version benchmarks aswell.
+ * =====================================================================================
+ */
 
 void CUBSort::benchSort(const Camera & camera, std::vector<int> & centroidIDsVec, int * centroidIDs, float * centroidPos, std::vector<float> & times) {
 
@@ -157,6 +191,14 @@ void CUBSort::benchSort(const Camera & camera, std::vector<int> & centroidIDsVec
 	times.push_back((sortTime+transformTime+copyTime)/1E3) ;
 }
 
+/* 
+ * ===  MEMBER FUNCTION : CUBSort ======================================================
+ *         Name:  deAllocate
+ *    Arguments:  float * centroidPos - Centroid position location.
+ *                int * centroidIDs - Centroid ids location.
+ *  Description:  Frees data sotred at pointers.
+ * =====================================================================================
+ */
 
 void CUBSort::deAllocate(float * centroidPos, int * centroidIDs) {
 	cudaFree(centroidPos) ;

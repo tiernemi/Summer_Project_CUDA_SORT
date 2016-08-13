@@ -1,17 +1,16 @@
 /*
  * =====================================================================================
  *
- *       Filename:  stl_sort_policy.cpp
+ *       Filename:  mherf_sort_policy.cpp
  *
- *    Description:  
+ *    Description:  Source file for stl sort policy.
  *
  *        Version:  1.0
  *        Created:  11/08/16 11:01:19
  *       Revision:  none
- *       Compiler:  gcc
+ *       Compiler:  g++
  *
  *         Author:  Michael Tierney (MT), tiernemi@tcd.ie
- *   Organization:  
  *
  * =====================================================================================
  */
@@ -28,11 +27,11 @@ static bool comparVec(const std::pair<int,float> & el1, const std::pair<int,floa
 }
 
 /* 
- * ===  MEMBER FUNCTION CLASS : stl_sort_policy  ======================================
- *         Name:  function
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ * ===  MEMBER FUNCTION : STLSort  === =================================================
+ *         Name:  allocate
+ *    Arguments:  const std::vector<Centroid> & centroids - Centroid data to allocate.
+ *      Returns:  Pair of pointers to centroid position data and ids.
+ *  Description:  Allocates position and id data on the CPU.
  * =====================================================================================
  */
 
@@ -51,11 +50,14 @@ std::pair<float*,int*> STLSort::allocate(const std::vector<Centroid> & centroids
 }
 
 /* 
- * ===  MEMBER FUNCTION CLASS : stl_sort_policy  ======================================
- *         Name:  function
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ * ===  MEMBER FUNCTION : STLSort  === ======================================================
+ *         Name:  sort
+ *    Arguments:  const Camera & camera, - Camera to sort relative to.
+ *                std::vector<int> & centroidIDsVec, - Array to write ids to.
+ *                int * centroidIDs - Array of centroid ids (GPU).
+ *                float * centroidPos - Array of centroid positions (GPU).
+ *  Description:  Transforms centorid positions to distances and sorts these keys
+ *                and ids (values) using stl sort.
  * =====================================================================================
  */
 
@@ -75,11 +77,15 @@ void STLSort::sort(const Camera & camera, std::vector<int> & centroidIDsVec, int
 }
 
 /* 
- * ===  MEMBER FUNCTION CLASS : stl_sort_policy  ======================================
- *         Name:  function
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ * ===  MEMBER FUNCTION : STLSort  === ======================================================
+ *         Name:  benchSort
+ *    Arguments:  const Camera & camera, - Camera to sort relative to.
+ *                std::vector<int> & centroidIDsVec, - Array to write ids to.
+ *                int * centroidIDs - Array of centroid ids (GPU).
+ *                float * centroidPos - Array of centroid positions (GPU).
+ *                std::vector<float> & times - Vector used to store timings.
+ *  Description:  Transforms centorid positions to distances and sorts these keys
+ *                and ids (values) using stl sort. This version also benchmarks.
  * =====================================================================================
  */
 
@@ -116,13 +122,12 @@ void STLSort::benchSort(const Camera & camera, std::vector<int> & centroidIDsVec
 	times.push_back(sortTime+transformTime+copyTime) ;
 }
 
-
 /* 
- * ===  MEMBER FUNCTION CLASS : stl_sort_policy  ======================================
- *         Name:  function
- *    Arguments:  
- *      Returns:  
- *  Description:  
+ * ===  MEMBER FUNCTION : STLSort  === =================================================
+ *         Name:  deAllocate
+ *    Arguments:  float * centroidPos - Centroid position location.
+ *                int * centroidIDs - Centroid ids location.
+ *  Description:  Frees data sotred at pointers.
  * =====================================================================================
  */
 

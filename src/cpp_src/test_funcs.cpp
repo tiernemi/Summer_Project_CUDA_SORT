@@ -58,7 +58,6 @@ float calcPercentSorted(const std::vector<Centroid> & centroids, const Camera & 
 }		/* -----  end of function calcPercentSorted  ----- */
 
 /*  
-/* 
  * ===  FUNCTION  ======================================================================
  *         Name:  makePercentSorted
  *    Arguments:  std::vector<Centroid> & centroids - Centroids which will be inversed

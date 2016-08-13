@@ -5,9 +5,9 @@
 /*
  * =====================================================================================
  *
- *       Filename:  stl_sort_policy.hpp
+ *       Filename:  thrust_sort_policy.hpp
  *
- *    Description:  
+ *    Description:  Thrust sorting policy. Members implemented using CUDA.
  *
  *        Version:  1.0
  *        Created:  11/08/16 10:58:05
@@ -25,8 +25,7 @@
 /* 
  * ===  CLASS  =========================================================================
  *         Name:  ThrustSort
- *       Fields:  
- *  Description:  
+ *  Description:  Thrust sorting policy. Members implemented using CUDA.
  * =====================================================================================
  */
 

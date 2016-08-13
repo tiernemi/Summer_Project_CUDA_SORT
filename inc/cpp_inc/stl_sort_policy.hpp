@@ -6,7 +6,7 @@
  *
  *       Filename:  stl_sort_policy.hpp
  *
- *    Description:  
+ *    Description:  Header for stl_sort policy.
  *
  *        Version:  1.0
  *        Created:  11/08/16 10:58:05
@@ -14,7 +14,6 @@
  *       Compiler:  gcc
  *
  *         Author:  Michael Tierney (MT), tiernemi@tcd.ie
- *   Organization:  
  *
  * =====================================================================================
  */
@@ -25,8 +24,7 @@
 /* 
  * ===  CLASS  =========================================================================
  *         Name:  STLSort
- *       Fields:  
- *  Description:  
+ *  Description:  STL sort policy. Uses CPU and stl sort.
  * =====================================================================================
  */
 

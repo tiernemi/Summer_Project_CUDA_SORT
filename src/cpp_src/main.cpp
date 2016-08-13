@@ -64,19 +64,7 @@ int main(int argc, char *argv[]) {
 	Clock myClock ;
 
 	CentroidSorter<ImplRadixSort> implSorter(centroids) ;
-	for (int j = 0 ; j < cameras.size() ; ++j) {
-		myClock.start() ;
-		ids = implSorter.sort(cameras[j]) ;
-		myClock.stop() ;
-		for (int i = 0 ; i < centroids.size() ; ++i) {
-			checkVector[i] = centroidsMap[ids[i]] ;
-		}
-		Transforms::transformToDistVec(dists,checkVector,cameras[j]) ;
-		if (!Tests::checkSorted(dists)) {
-			std::cout << j << std::endl;
-		}
-		std::cout << myClock.getDuration() << std::endl;
-	}
+	ids = implSorter.sort(cameras[0]) ;
 	return EXIT_SUCCESS ;
 }
 

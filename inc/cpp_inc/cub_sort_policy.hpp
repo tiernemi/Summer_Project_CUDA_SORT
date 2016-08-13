@@ -7,15 +7,14 @@
  *
  *       Filename:  stl_sort_policy.hpp
  *
- *    Description:  
+ *    Description:  Header for CUB sort policy.
  *
  *        Version:  1.0
  *        Created:  11/08/16 10:58:05
  *       Revision:  none
- *       Compiler:  gcc
+ *       Compiler:  g++
  *
  *         Author:  Michael Tierney (MT), tiernemi@tcd.ie
- *   Organization:  
  *
  * =====================================================================================
  */
@@ -26,8 +25,7 @@
 /* 
  * ===  CLASS  =========================================================================
  *         Name:  CUBSort
- *       Fields:  
- *  Description:  
+ *  Description:  Policy for CUB library sort. Implemented on GPU.
  * =====================================================================================
  */
 

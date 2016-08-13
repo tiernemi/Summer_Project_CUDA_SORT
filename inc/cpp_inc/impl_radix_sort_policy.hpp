@@ -6,7 +6,7 @@
  *
  *       Filename:  impl_radix_sort_policy.hpp
  *
- *    Description:  
+ *    Description:  Header for project implementation of sort.
  *
  *        Version:  1.0
  *        Created:  11/08/16 10:58:05
@@ -24,8 +24,7 @@
 /* 
  * ===  CLASS  =========================================================================
  *         Name:  ImplRadixSort
- *       Fields:  
- *  Description:  
+ *  Description:  Implementation of 3-kernel radix sort from Duane Merrill's paper.
  * =====================================================================================
  */
 
