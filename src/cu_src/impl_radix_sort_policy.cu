@@ -519,18 +519,19 @@ static __global__ void downsweepScan(const int * __restrict__ keysIn, int * keys
 			numFlags[i] = 0 ;
 			if (globalOffset+i*WARPSIZE < numElements) {
 				currentKey[i] = keysIn[globalOffset+i*WARPSIZE] ;
-		//		currentVal[i] = valuesIn[globalOffset+i*WARPSIZE] ;
 				digit[i] = (currentKey[i]>>digitPos) & RADIXMASK ;
 				numFlags[i] = (1 << PARA_BIT_SIZE*digit[i]) ;
 			}
 		}
 
+		// Warp level prefix sum. //
 		#pragma unroll
 		for (int i = 0 ; i < NUM_KEYS_PER_THREAD ; ++i) {
 			numFlags[i] = warpIncPrefixSum(numFlags[i], laneID, WARPSIZE) ;
 
 		}
 
+		// Combine prefix sums. //
 		#pragma unroll
 		for (int i = 0 ; i < NUM_KEYS_PER_THREAD-1 ; ++i) {
 			numFlags[i+1] += __shfl(numFlags[i],WARPSIZE_MIN_1) ;

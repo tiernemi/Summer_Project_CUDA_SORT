@@ -20,6 +20,7 @@
 #include "../../inc/cpp_inc/pt_sort_policy.hpp"
 #include "../../inc/cpp_inc/transforms.hpp"
 #include "../../inc/cpp_inc/clock.hpp"
+#include <iostream>
 
 
 typedef unsigned char ubyte ;
@@ -171,9 +172,18 @@ void PTSort::benchSort(const Camera & camera, std::vector<int> & centroidIDsVec,
 	// Type cast to unsigned int in order to perform bit ops  //
 	bool isSorted = createHistogram(dists,indices1,size,byteHistogram) ;
 	if (isSorted) {
+		clock.stop() ;
+		float sortTime = clock.getDuration() ;
+		times.push_back(sortTime) ;
+		times.push_back(sortTime+transformTime) ;
 		for (int i = 0 ; i < size ; ++i) {
 			centroidIDsVec[i] = centroidIDs[indices1[i]] ;
 		}
+		delete [] indices1 ;
+		delete [] indices2 ;
+		clock.stop() ;
+		float copyTime = clock.getDuration() ;
+		times.push_back(sortTime+transformTime+copyTime) ;
 		return ;
 	}
 

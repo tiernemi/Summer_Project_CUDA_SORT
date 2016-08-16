@@ -42,9 +42,11 @@ typedef std::vector<std::vector<std::vector<float>>>  threeVec ;
 typedef std::vector<std::vector<float>>  twoVec ;
 
 static void outputTimeCamData(std::string algName, twoVec & cameraTimes, int numElements, std::string filename) ;
-static void outputTimeSizeData(std::string algName, twoVec & sizeTimes, std::vector<int> & numElements) ;
-static void outputSpeedUpComparSize(std::vector<std::string> algNames, threeVec & algTimes, std::vector<int> indices, std::vector<int> & numElements) ;
-static std::vector<Centroid> generateCentroids(long long numCentroids) ;
+static void outputTimeSizeData(std::string dist, std::string algName, twoVec & sizeTimes, std::vector<int> & numElements) ;
+static void outputSpeedUpComparSize(std::string dist, std::vector<std::string> algNames, threeVec & algTimes, std::vector<int> indices, 
+		std::vector<int> & numElements) ;
+static std::vector<Centroid> generateCentroidsUni(long long numCentroids) ;
+static std::vector<Centroid> generateCentroidsNormal(long long numCentroids) ;
 
 int main(int argc, char *argv[]) {
 
@@ -60,6 +62,8 @@ int main(int argc, char *argv[]) {
 	std::vector<int> ids ;
 	threeVec algTimes(numSorts) ;
 	int numElements = centroids.size() ;
+	std::vector<std::string> algNames = {"STL_Sort", "PT_Sort", "MHerf_Sort", 
+		"Thrust_Sort", "CUB_Sort", "IMPL_Sort"} ;
 	Clock clock ;
 
 	CentroidSorter<STLSort> * stlSorter = new CentroidSorter<STLSort>(centroids) ;
@@ -154,7 +158,7 @@ int main(int argc, char *argv[]) {
 	for (int i = 1 ; i < maxPow2 ; ++i) {
 		std::cout << "Benchmarking Data Size " << pow2 << std::endl;
 		dataSizes.push_back(pow2) ;
-		std::vector<Centroid> ranData = generateCentroids(pow2) ;
+		std::vector<Centroid> ranData = generateCentroidsUni(pow2) ;
 		
 		CentroidSorter<STLSort> * stlSorter = new CentroidSorter<STLSort>(ranData) ;
 		clock.start() ;
@@ -214,13 +218,94 @@ int main(int argc, char *argv[]) {
 		pow2 *= 2 ;
 	}
 
-	outputTimeSizeData("STL_Sort", algGenDataTimes[0], dataSizes) ;
-	outputTimeSizeData("PT_Sort", algGenDataTimes[1], dataSizes) ;
-	outputTimeSizeData("MHerf_Sort", algGenDataTimes[2], dataSizes) ;
-	outputTimeSizeData("Thrust_Sort", algGenDataTimes[3], dataSizes) ;
-	outputTimeSizeData("CUB_Sort", algGenDataTimes[4], dataSizes) ;
-	outputTimeSizeData("IMPL_Sort", algGenDataTimes[5], dataSizes) ;
+	outputTimeSizeData("uni", "STL_Sort", algGenDataTimes[0], dataSizes) ;
+	outputTimeSizeData("uni", "PT_Sort", algGenDataTimes[1], dataSizes) ;
+	outputTimeSizeData("uni", "MHerf_Sort", algGenDataTimes[2], dataSizes) ;
+	outputTimeSizeData("uni", "Thrust_Sort", algGenDataTimes[3], dataSizes) ;
+	outputTimeSizeData("uni", "CUB_Sort", algGenDataTimes[4], dataSizes) ;
+	outputTimeSizeData("uni", "IMPL_Sort", algGenDataTimes[5], dataSizes) ;
 
+	std::vector<int> speedupIndices = {0,1,2,3,4,5} ;
+	outputSpeedUpComparSize("uni", algNames,algGenDataTimes,speedupIndices,dataSizes) ;
+
+	pow2 = 1 ;
+	maxPow2 = 28 ;
+	threeVec algGenDataTimesNormal(6) ;
+	dataSizes.clear() ;
+	sizeTimes.clear() ;
+	for (int i = 1 ; i < maxPow2 ; ++i) {
+		std::cout << "Benchmarking Data Size " << pow2 << std::endl;
+		dataSizes.push_back(pow2) ;
+		std::vector<Centroid> ranData = generateCentroidsUni(pow2) ;
+		
+		CentroidSorter<STLSort> * stlSorter = new CentroidSorter<STLSort>(ranData) ;
+		clock.start() ;
+		ids = stlSorter->benchSort(cameras[0], sizeTimes) ;
+		clock.stop() ;
+		sizeTimes.push_back(clock.getDuration()) ;
+		delete stlSorter ;
+		algGenDataTimesNormal[0].push_back(sizeTimes) ;
+		sizeTimes.clear() ;
+
+		CentroidSorter<PTSort> * ptSorter = new CentroidSorter<PTSort>(ranData) ;
+		clock.start() ;
+		ids = ptSorter->benchSort(cameras[0], sizeTimes) ;
+		clock.stop() ;
+		sizeTimes.push_back(clock.getDuration()) ;
+		delete ptSorter ;
+		algGenDataTimesNormal[1].push_back(sizeTimes) ;
+		sizeTimes.clear() ;
+
+		CentroidSorter<MHerfSort> * mherfSorter = new CentroidSorter<MHerfSort>(ranData) ;
+		clock.start() ;
+		ids = mherfSorter->benchSort(cameras[0], sizeTimes) ;
+		clock.stop() ;
+		sizeTimes.push_back(clock.getDuration()) ;
+		delete mherfSorter ;
+		algGenDataTimesNormal[2].push_back(sizeTimes) ;
+		sizeTimes.clear() ;
+		
+		CentroidSorter<ThrustSort> * thrustSorter = new CentroidSorter<ThrustSort>(ranData) ;
+		clock.start() ;
+		ids = thrustSorter->benchSort(cameras[0], sizeTimes) ;
+		clock.stop() ;
+		sizeTimes.push_back(clock.getDuration()) ;
+		delete thrustSorter ;
+		algGenDataTimesNormal[3].push_back(sizeTimes) ;
+		sizeTimes.clear() ;
+		
+		CentroidSorter<CUBSort> * cubSorter = new CentroidSorter<CUBSort>(ranData) ;
+		clock.start() ;
+		ids = cubSorter->benchSort(cameras[0], sizeTimes) ;
+		clock.stop() ;
+		sizeTimes.push_back(clock.getDuration()) ;
+		delete cubSorter ;
+		algGenDataTimesNormal[4].push_back(sizeTimes) ;
+		sizeTimes.clear() ;
+
+		CentroidSorter<ImplRadixSort> * implSorter = new CentroidSorter<ImplRadixSort>(ranData) ;
+		Clock clock ;
+		clock.start() ;
+		ids = implSorter->benchSort(cameras[0], sizeTimes) ;
+		clock.stop() ;
+		sizeTimes.push_back(clock.getDuration()) ;
+		delete implSorter ;
+		algGenDataTimesNormal[5].push_back(sizeTimes) ;
+		sizeTimes.clear() ;
+
+		pow2 *= 2 ;
+	}
+
+
+	
+	outputTimeSizeData("normal", "STL_Sort", algGenDataTimesNormal[0], dataSizes) ;
+	outputTimeSizeData("normal", "PT_Sort", algGenDataTimesNormal[1], dataSizes) ;
+	outputTimeSizeData("normal", "MHerf_Sort", algGenDataTimesNormal[2], dataSizes) ;
+	outputTimeSizeData("normal", "Thrust_Sort", algGenDataTimesNormal[3], dataSizes) ;
+	outputTimeSizeData("normal", "CUB_Sort", algGenDataTimesNormal[4], dataSizes) ;
+	outputTimeSizeData("normal", "IMPL_Sort", algGenDataTimesNormal[5], dataSizes) ;
+
+	outputSpeedUpComparSize("normal", algNames,algGenDataTimesNormal,speedupIndices,dataSizes) ;
 	return EXIT_SUCCESS ;
 }
 
@@ -243,9 +328,9 @@ static void outputTimeCamData(std::string algName, twoVec & cameraTimes, int num
 }
 
 
-static void outputTimeSizeData(std::string algName, twoVec & sizeTimes, std::vector<int> & numElements) {
+static void outputTimeSizeData(std::string dist, std::string algName, twoVec & sizeTimes, std::vector<int> & numElements) {
 	char base[1000] ;
-	std::string datFileName = "./bench_data/sizetimes" + algName + ".txt" ;
+	std::string datFileName = "./bench_data/sizetimes" + dist + algName + ".txt" ;
 	std::ofstream output(datFileName) ;
 	for (unsigned int i = 0 ; i < sizeTimes.size() ; ++i) {
 		float sortRateSortOnly = numElements[i]/(sizeTimes[i][0]*1E6) ;
@@ -259,7 +344,7 @@ static void outputTimeSizeData(std::string algName, twoVec & sizeTimes, std::vec
 	output.close() ;
 }
 
-static std::vector<Centroid> generateCentroids(long long numCentroids) {
+static std::vector<Centroid> generateCentroidsUni(long long numCentroids) {
 	std::mt19937 gen ;
 	gen.seed(15071992) ;
 	std::uniform_real_distribution<float> distrib(30,80) ;
@@ -271,4 +356,33 @@ static std::vector<Centroid> generateCentroids(long long numCentroids) {
 		data.push_back(Centroid(x,y,z,i)) ;
 	}
 	return data ;
+}
+
+static std::vector<Centroid> generateCentroidsNormal(long long numCentroids) {
+	std::mt19937 gen ;
+	gen.seed(150992) ;
+	std::normal_distribution<float> distrib(50,15) ;
+	std::vector<Centroid> data ;
+	for (long long i = 0 ; i < numCentroids ; ++i) {
+		float x = distrib(gen) ;
+		float y = distrib(gen) ;
+		float z = distrib(gen) ;
+		data.push_back(Centroid(x,y,z,i)) ;
+	}
+	return data ;
+}
+
+
+static void outputSpeedUpComparSize(std::string dist, std::vector<std::string> algNames, threeVec & algTimes, std::vector<int> indices, 
+		std::vector<int> & numElements) {
+	for (int i = 1 ; i < indices.size() ; ++i) {
+		char base[1000] ;
+		std::string datFileName = "./bench_data/sizespeed" + dist + algNames[i] + "_" + algNames[0] + ".txt" ;
+		std::ofstream output(datFileName) ;
+		for (int j = 0 ; j < numElements.size() ; ++j) {
+			output << numElements[j] << " " << algTimes[0][j][0]/algTimes[i][j][0] << " " << algTimes[0][j][1]/algTimes[i][j][1] 
+			<< " " << algTimes[0][j][2]/algTimes[i][j][2] <<  " " << algTimes[0][j][3]/algTimes[i][j][3]  << " " << std::endl ;
+		}
+		output.close() ;
+	}
 }

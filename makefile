@@ -8,7 +8,7 @@ LINK= nvcc
 CFLAGS		= -W -Wall -lcuda $(PARALLEL) $(DEFINES)
 CXXFLAGS    = -lGL -lglut -lpthread -llibtiff  -O3 -finline-functions -ffast-math -fomit-frame-pointer -funroll-loops -W -Wall -lcuda $(PARALLEL) $(DEFINES) -std=c++11 -lm
 
-NVCCFLAGS	= -O5 -std=c++11 -arch=compute_35 -code=sm_35  --relocatable-device-code true --use_fast_math -Xptxas="-v" 
+NVCCFLAGS	= -O5 -std=c++11 -arch=compute_35 -code=sm_35  --relocatable-device-code true --use_fast_math -Xptxas="-v" -lineinfo
 
 #--ptxas-options=-v -lineinfo #-maxrregcount 32
 LIBS		= $(PARALLEL)
