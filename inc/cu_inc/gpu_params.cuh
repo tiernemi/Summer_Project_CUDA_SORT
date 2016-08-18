@@ -1,0 +1,20 @@
+#ifndef GPU_PARAMS
+#define GPU_PARAMS
+
+// Useful MACROS. //
+#define WARPSIZE 32
+#define WARPSIZE_HALF 16
+#define P2_WARPSIZE_HALF 5
+#define WARPSIZE_MIN_1 31
+#define RADIXSIZE 4
+#define RADIXMASK 3
+#define RADIXWIDTH 2
+#define NUM_KEYS_PER_THREAD 4
+
+#define NUM_BLOCKS 512
+#define NUM_THREADS_PER_BLOCK 128
+#define NUM_WARPS NUM_THREADS_PER_BLOCK/WARPSIZE
+#define PARA_BIT_SIZE 8
+#define PARA_BIT_MASK_0 255
+
+#endif
