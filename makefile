@@ -6,9 +6,9 @@ LINK= nvcc
 #PARALLEL	= -fopenmp
 #DEFINES		= -DWITH_OPENMP
 CFLAGS		= -W -Wall -lcuda $(PARALLEL) $(DEFINES)
-CXXFLAGS    = -lGL -lglut -lpthread -llibtiff  -O3 -finline-functions -ffast-math -fomit-frame-pointer -funroll-loops -W -Wall -lcuda $(PARALLEL) $(DEFINES) -std=c++11 -lm
+CXXFLAGS    = -lGL -lglut -lpthread -llibtiff  -O5 -finline-functions -ffast-math -fomit-frame-pointer -funroll-loops -W -Wall -lcuda $(PARALLEL) $(DEFINES) -std=c++11 -lm
 
-NVCCFLAGS	= -O5 -std=c++11 -arch=compute_35 -code=sm_35  --relocatable-device-code true --use_fast_math -Xptxas="-v" -lineinfo --maxrregcount=41
+NVCCFLAGS	= -O5 -std=c++11 -arch=compute_35 -code=sm_35  --relocatable-device-code true --use_fast_math -Xptxas="-v" -lineinfo --maxrregcount=42
 
 #--ptxas-options=-v -lineinfo #-maxrregcount 32
 LIBS		= $(PARALLEL)

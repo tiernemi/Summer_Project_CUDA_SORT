@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
 	delete implSorter ;
 
 	long long pow2 = 1 ;
-	long long maxPow2 = 28 ;
+	long long maxPow2 = 29 ;
 	threeVec algGenDataTimes(6) ;
 	std::vector<float> sizeTimes ;
 	std::vector<int> dataSizes ;
@@ -229,7 +229,7 @@ int main(int argc, char *argv[]) {
 	outputSpeedUpComparSize("uni", algNames,algGenDataTimes,speedupIndices,dataSizes) ;
 
 	pow2 = 1 ;
-	maxPow2 = 28 ;
+	maxPow2 = 29 ;
 	threeVec algGenDataTimesNormal(6) ;
 	dataSizes.clear() ;
 	sizeTimes.clear() ;
